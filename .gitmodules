@@ -1,0 +1,21 @@
+[submodule "ext/git"]
+	path = ext/sht
+	url = https://github.com/tizilogic/sht.git
+[submodule "Tools/linux_x64"]
+	path = Tools/linux_x64
+	url = https://github.com/Kode/KincTools_linux_x64.git
+[submodule "Tools/linux_arm"]
+	path = Tools/linux_arm
+	url = https://github.com/Kode/KincTools_linux_arm.git
+[submodule "Tools/linux_arm64"]
+	path = Tools/linux_arm64
+	url = https://github.com/Kode/KincTools_linux_arm64.git
+[submodule "Tools/freebsd_x64"]
+	path = Tools/freebsd_x64
+	url = https://github.com/Kode/KincTools_freebsd_x64
+[submodule "Tools/macos"]
+	path = Tools/macos
+	url = https://github.com/Kode/KincTools_macos
+[submodule "Tools/windows_x64"]
+	path = Tools/windows_x64
+	url = https://github.com/Kode/KincTools_windows_x64.git

@@ -1,0 +1,13 @@
+{
+	"configurations": [
+		{
+			"name": "Kinc: Launch",
+			"type": "lldb",
+			"request": "launch",
+			"program": "/home/tc/code/soso/bin/soso",
+			"cwd": "/home/tc/code/soso/bin",
+			"preLaunchTask": "Debug Build for Linux"
+		}
+	],
+	"compounds": []
+}
