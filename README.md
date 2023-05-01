@@ -1,0 +1,3 @@
+# Solitaire Solver (soso)
+
+I wanted my own so I started this...
