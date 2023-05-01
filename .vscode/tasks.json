@@ -2,9 +2,12 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Debug Build for Linux",
+            "label": "Debug Build",
             "type": "shell",
-            "command": "${workspaceFolder}/make --compile --debug --compiler clang"
+            "command": "${workspaceFolder}/make --compile --debug --compiler clang",
+            "windows":{
+                "command": "${workspaceFolder}/make.bat --compile --debug"
+            }
         }
     ]
 }
