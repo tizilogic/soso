@@ -37,7 +37,7 @@ static bool setup_verify_deal(void) {
 	}
 	for (int i = 0; i < 24; ++i)
 		if (game.stock[23 - i] != card++) test_fail();
-	if (game.stock_top != 25) test_fail();
+	if (game.stock_top != 24) test_fail();
 	if (game.waste_top != 0) test_fail();
 	return true;
 }
