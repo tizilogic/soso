@@ -40,3 +40,14 @@ void soso_deal(soso_game_t *game, soso_deck_t *deck) {
 	int stock_id = 23;
 	while (next < 52) game->stock[stock_id--] = deck->cards[next++];
 }
+
+void soso_ctx_init(soso_ctx_t *ctx, int draw_count) {
+    ctx->draw_count = draw_count;
+    ctx->visited = NULL;
+    ctx->moves = NULL;
+    ctx->moves_cap = 0;
+    ctx->moves_top = -1;
+    ctx->moves_total = 0;
+}
+
+void soso_solve(soso_ctx_t *ctx, soso_game_t *game) {}
