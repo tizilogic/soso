@@ -14,6 +14,7 @@ project.addIncludeDir('ext');
 project.setCStd('c99');
 project.setCppStd('c++11');
 project.setDebugDir('bin');
+project.setCmd();
 
 project.flatten();
 resolve(project);

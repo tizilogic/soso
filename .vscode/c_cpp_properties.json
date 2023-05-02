@@ -1,16 +1,17 @@
 {
-	"configurations": [
-		{
-			"name": "Default",
-			"includePath": [
-				"${workspaceFolder}/src",
-				"${workspaceFolder}/ext"
-			],
-			"defines": [],
-			"compilerPath": "${default}",
-			"cStandard": "c99",
-			"cppStandard": "c++11",
-			"intelliSenseMode": "${default}"
-		}
-	]
+    "configurations": [
+        {
+            "name": "Default",
+            "includePath": [
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/ext"
+            ],
+            "defines": [],
+            "compilerPath": "${default}",
+            "cStandard": "c99",
+            "cppStandard": "c++11",
+            "intelliSenseMode": "${default}"
+        }
+    ],
+    "version": 4
 }

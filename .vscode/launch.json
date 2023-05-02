@@ -1,10 +1,16 @@
 {
 	"configurations": [
 		{
-			"name": "Kinc: Launch",
-			"type": "lldb",
+			"name": "Launch",
 			"request": "launch",
+			//"type": "lldb",	
+			"type": "cppvsdbg",
 			"program": "${workspaceFolder}/bin/soso",
+			"windows": {
+				"name": "Launch (windows)",
+				"request": "launch",
+				"program": "${workspaceFolder}/bin/soso.exe"
+			},
 			"cwd": "${workspaceFolder}/bin",
 			"preLaunchTask": "Debug Build"
 		}
