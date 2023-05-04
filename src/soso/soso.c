@@ -89,7 +89,9 @@ static void add_move(soso_ctx_t *ctx, const soso_move_t *m) {
 
 static bool move_available(const soso_game_t *game) {}
 
-static void draw(soso_game_t *game) {}
+static bool draw(soso_game_t *game) {
+	return false;
+}
 
 static void make_auto_moves(soso_ctx_t *ctx, soso_game_t *game) {
 	// Turn flipable cards
@@ -104,8 +106,8 @@ static void make_auto_moves(soso_ctx_t *ctx, soso_game_t *game) {
 	int snw = game->stock_top + game->waste_top;
 	int numdraw = 0;
 	for (int i = 0; i < snw; ++i) {
-		if (move_available(game)) return;
-		draw(game);
+		if (move_available(game)) break;
+		if(!draw(game)) break;
 		++numdraw;
 	}
 	if (numdraw > 0 && numdraw < snw)
