@@ -26,19 +26,19 @@ static bool setup_verify_deal(void) {
 	for (uint8_t i = 0; i < 52; ++i) deck.cards[i] = i;
 	soso_game_t game;
 	soso_deal(&game, &deck);
-	uint8_t card = 0;
+	uint8_t card = 51;
 	for (int i = 0; i < 7; ++i) {
 		if (game.tableau_top[i] != i + 1) test_fail();
 		if (game.tableau_up[i] != i) test_fail();
 		if (i < 4)
 			if (game.foundation_top[i] != 0) test_fail();
 		for (int j = i; j < 7; ++j)
-			if (game.tableau[j][i] != card++) test_fail();
+			if (game.tableau[j][i] != card--) test_fail();
 	}
 	for (int i = 0; i < 24; ++i)
-		if (game.stock[23 - i] != card++) test_fail();
+		if (game.stock[23 - i] != card--) test_fail();
 	if (game.stock_count != 24) test_fail();
-	if (game.stock_cursor != 23) test_fail();
+	if (game.stock_cur != 24) test_fail();
 	return true;
 }
 
