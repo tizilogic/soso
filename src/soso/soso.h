@@ -5,6 +5,27 @@
 #include <stdlib.h>
 
 #define SOSO_EMPTY_CARD 255
+// TODO: Find a way to determine the maximum possible number of moves per game state
+#define SOSO_MOVES_AVAILABLE_CAP 16
+#define SOSO_BLACK 0
+#define SOSO_RED 1
+#define SOSO_KING 12
+
+typedef enum soso_pile {
+	SOSO_EMPTY = 0,
+	SOSO_STOCK_WASTE,
+	SOSO_TABLEAU1,
+	SOSO_TABLEAU2,
+	SOSO_TABLEAU3,
+	SOSO_TABLEAU4,
+	SOSO_TABLEAU5,
+	SOSO_TABLEAU6,
+	SOSO_TABLEAU7,
+	SOSO_FOUNDATIONC,
+	SOSO_FOUNDATIOND,
+	SOSO_FOUNDATIONS,
+	SOSO_FOUNDATIONH,
+} soso_pile_t;
 
 typedef struct soso_deck {
 	int8_t cards[52];
@@ -12,11 +33,9 @@ typedef struct soso_deck {
 
 typedef struct soso_game {
 	int8_t stock[24];
-	int8_t waste[24];
+	int8_t stock_cursor;
+	int8_t stock_count;
 	int8_t tableau[7][13];
-	int8_t foundation[4][13];
-	int8_t stock_top;
-	int8_t waste_top;
 	int8_t tableau_top[7];
 	int8_t tableau_up[7];
 	int8_t foundation_top[4];
@@ -36,7 +55,9 @@ typedef struct soso_ctx {
 	int draw_count;
 	sht_t *visited;
 	soso_move_t *moves;
+	soso_move_t moves_available[SOSO_MOVES_AVAILABLE_CAP];
 	int moves_cap, moves_top;
+	int moves_available_top;
 	int moves_total;
 	void *(*alloc)(size_t);
 	void *(*realloc)(void *, size_t);
