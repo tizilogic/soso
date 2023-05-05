@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sht/sht.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -60,16 +61,18 @@ typedef struct soso_ctx {
 	soso_move_t moves_available[SOSO_MOVES_AVAILABLE_CAP];
 	int moves_cap, moves_top;
 	int moves_available_top;
+	int automoves_count;
 	int moves_total;
+	int max_visited;
 	void *(*alloc)(size_t);
 	void *(*realloc)(void *, size_t);
 	void (*free)(void *);
 } soso_ctx_t;
 
-void soso_ctx_init(soso_ctx_t *ctx, int draw_count, void *(*custom_alloc)(size_t),
+void soso_ctx_init(soso_ctx_t *ctx, int draw_count, int max_visited, void *(*custom_alloc)(size_t),
                    void *(*custom_realloc)(void *, size_t), void (*custom_free)(void *));
 void soso_ctx_destroy(soso_ctx_t *ctx);
-void soso_solve(soso_ctx_t *ctx, soso_game_t *game);
+bool soso_solve(soso_ctx_t *ctx, soso_game_t *game);
 
 void soso_random_seed(uint64_t seed);
 uint64_t soso_random_get(void);

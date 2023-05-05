@@ -1,6 +1,8 @@
 #include "soso.h"
+
+#include <sht/murmur3.h>
+
 #include <assert.h>
-#include <stdbool.h>
 #include <string.h>
 
 #define SOSO_NUM_SHUFFLES 12
@@ -42,13 +44,15 @@ void soso_deal(soso_game_t *game, soso_deck_t *deck) {
 	while (next > -1) game->stock[stock_id--] = deck->cards[next--];
 }
 
-void soso_ctx_init(soso_ctx_t *ctx, int draw_count, void *(*custom_alloc)(size_t),
+void soso_ctx_init(soso_ctx_t *ctx, int draw_count, int max_visited, void *(*custom_alloc)(size_t),
                    void *(*custom_realloc)(void *, size_t), void (*custom_free)(void *)) {
 	ctx->draw_count = draw_count;
+	ctx->max_visited = max_visited;
 	ctx->visited = NULL;
 	ctx->moves = NULL;
 	ctx->moves_cap = 0;
 	ctx->moves_top = 0;
+	ctx->automoves_count = 0;
 	ctx->moves_total = 0;
 	if (custom_alloc != NULL) {
 		ctx->alloc = custom_alloc;
@@ -82,9 +86,11 @@ static void grow_moves(soso_ctx_t *ctx) {
 	}
 }
 
-static void add_move(soso_ctx_t *ctx, const soso_move_t *m) {
+static void add_move(soso_ctx_t *ctx, const soso_move_t *m, bool is_auto) {
 	grow_moves(ctx);
 	memcpy(&ctx->moves[ctx->moves_top++], m, sizeof(soso_move_t));
+	++ctx->moves_total;
+	if (is_auto) ++ctx->automoves_count;
 }
 
 static inline soso_int_t get_waste_card(const soso_game_t *game) {
@@ -296,10 +302,10 @@ static void make_auto_moves(soso_ctx_t *ctx, soso_game_t *game) {
 	for (int i = 0; i < 7; ++i) {
 		if (game->tableau_top > 0 && game->tableau_top[i] == game->tableau_up[i]) {
 			--game->tableau_up[i];
-			add_move(ctx, &(soso_move_t){.from = i + SOSO_TABLEAU1,
-			                             .to = i + SOSO_TABLEAU1,
-			                             .count = 1,
-			                             .flip = 1});
+			add_move(ctx,
+			         &(soso_move_t){
+			             .from = i + SOSO_TABLEAU1, .to = i + SOSO_TABLEAU1, .count = 1, .flip = 1},
+			         true);
 		}
 	}
 
@@ -312,10 +318,34 @@ static void make_auto_moves(soso_ctx_t *ctx, soso_game_t *game) {
 		++numdraw;
 	}
 	if (numdraw > 0 && numdraw < maxdraw)
-		add_move(ctx, &(soso_move_t){.count = numdraw,
-		                             .from = SOSO_STOCK_WASTE,
-		                             .to = SOSO_STOCK_WASTE,
-		                             .flip = 0});
+		add_move(ctx,
+		         &(soso_move_t){
+		             .count = numdraw, .from = SOSO_STOCK_WASTE, .to = SOSO_STOCK_WASTE, .flip = 0},
+		         true);
 }
 
-void soso_solve(soso_ctx_t *ctx, soso_game_t *game) {}
+static void clean_game(soso_game_t *game) {
+	for (int i = game->stock_count; i < 24; ++i) game->stock[i] = SOSO_EMPTY_CARD;
+	for (int i = 0; i < 7; ++i)
+		for (int j = game->tableau_top[i]; j < 13; ++j) game->tableau[i][j] = SOSO_EMPTY_CARD;
+}
+
+static inline uint32_t state_hash(const soso_game_t *game, const soso_move_t *move) {
+	uint32_t game_hash;
+	MurmurHash3_x86_32(game, sizeof(soso_game_t), 42, &game_hash);
+	return game_hash ^ *(const uint32_t *)move;
+}
+
+static void undo_move(soso_ctx_t *ctx, soso_game_t *game) {}
+
+bool soso_solve(soso_ctx_t *ctx, soso_game_t *game) {
+	// init visited
+	ctx->visited = sht_init_alloc(sizeof(uint32_t), 100000, 42, ctx->alloc, ctx->free);
+	int states_visited = 0;
+	while (states_visited < ctx->max_visited) {
+		make_auto_moves(ctx, game);
+		update_available_moves(ctx, game, false);
+		if (ctx->moves_available_top == 0 && ctx->moves_top - ctx->automoves_count == 0) break;
+	}
+	return false;
+}
