@@ -1,6 +1,12 @@
 #include "setup.c.h"
+#include "sohelper.c.h"
 
 int main(void) {
-	if (setup_run_tests()) return 0;
-	return 1;
+	bool failed = false;
+	if (!setup_run_tests()) failed = true;
+	if (!sohelper_run_tests()) failed = true;
+
+	if (failed) return 1;
+	printf("\nAll tests completed successfully\n");
+	return 0;
 }
