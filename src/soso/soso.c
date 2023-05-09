@@ -6,6 +6,7 @@
 #include <string.h>
 
 #define SOSO_NUM_SHUFFLES 12
+#define SOSO_HASH_SEED 0xdeadc0de
 
 static uint64_t random_get_in(uint64_t min, uint64_t max) {
 	return soso_random_get() % (max + 1 - min) + min;
@@ -86,82 +87,60 @@ static void grow_moves(soso_ctx_t *ctx) {
 	}
 }
 
-static void add_move(soso_ctx_t *ctx, const soso_move_t *m, bool is_auto) {
+void soso_internal_add_move(soso_ctx_t *ctx, const soso_move_t m, bool is_auto) {
 	grow_moves(ctx);
-	memcpy(&ctx->moves[ctx->moves_top++], m, sizeof(soso_move_t));
+	ctx->moves[ctx->moves_top++] = m;
 	++ctx->moves_total;
 	if (is_auto) ++ctx->automoves_count;
 }
 
-static inline soso_int_t get_waste_card(const soso_game_t *game) {
-	if (game->stock_count > 0 && game->stock_count > game->stock_cur)
-		return game->stock[game->stock_cur];
-	return -1;
-}
-
-static inline soso_int_t cvalue(soso_int_t card) {
-	return card % 13;
-}
-
-static inline soso_int_t csuit(soso_int_t card) {
-	return card / 13;
-}
-
-static inline soso_int_t ccolor(soso_int_t card) {
-	return csuit(card) % 2;
-}
-
-static inline bool foundation_valid(soso_int_t card, const soso_int_t *foundation_top) {
-	return foundation_top[csuit(card)] == cvalue(card);
-}
-
-static inline bool tableau_valid(soso_int_t from, soso_int_t to) {
-	return (cvalue(to) - cvalue(from) == 1) && ccolor(from) != ccolor(to);
-}
-
-static void update_waste_moves(soso_ctx_t *ctx, const soso_game_t *game) {
-	soso_int_t card_from = get_waste_card(game);
+void soso_internal_update_waste_moves(soso_ctx_t *ctx, const soso_game_t *game) {
+	soso_int_t card_from = soso_internal_get_waste_card(game);
 	if (card_from == -1) return;
 
 	// Waste->Foundation
-	if (foundation_valid(card_from, game->foundation_top)) {
+	if (soso_internal_foundation_valid(card_from, game->foundation_top)) {
 		ctx->moves_available[ctx->moves_available_top].from = SOSO_STOCK_WASTE;
-		ctx->moves_available[ctx->moves_available_top].to = SOSO_FOUNDATIONC + csuit(card_from);
+		ctx->moves_available[ctx->moves_available_top].to =
+		    SOSO_FOUNDATION1C + soso_internal_csuit(card_from);
 		ctx->moves_available[ctx->moves_available_top].count = 1;
-		ctx->moves_available[ctx->moves_available_top++].flip = 0;
+		ctx->moves_available[ctx->moves_available_top++].extra = SOSO_NOEXTRA;
 	}
 	// Waste->Tableau
 	bool king_placed = false;
 	for (int i = 0; i < 7; ++i) {
-		if (!king_placed && game->tableau_top[i] == 0 && cvalue(card_from) == SOSO_KING) {
+		if (!king_placed && game->tableau_top[i] == 0 &&
+		    soso_internal_cvalue(card_from) == SOSO_KING) {
 			king_placed = true;
 			ctx->moves_available[ctx->moves_available_top].from = SOSO_STOCK_WASTE;
 			ctx->moves_available[ctx->moves_available_top].to = SOSO_TABLEAU1 + i;
 			ctx->moves_available[ctx->moves_available_top].count = 1;
-			ctx->moves_available[ctx->moves_available_top++].flip = 0;
+			ctx->moves_available[ctx->moves_available_top++].extra = SOSO_NOEXTRA;
 			continue;
 		}
 		if (game->tableau_top[i] == 0) continue;
 		soso_int_t card_to = game->tableau[i][game->tableau_top[i] - 1];
-		if (tableau_valid(card_from, card_to)) {
+		if (soso_internal_tableau_valid(card_from, card_to)) {
 			ctx->moves_available[ctx->moves_available_top].from = SOSO_STOCK_WASTE;
 			ctx->moves_available[ctx->moves_available_top].to = SOSO_TABLEAU1 + i;
 			ctx->moves_available[ctx->moves_available_top].count = 1;
-			ctx->moves_available[ctx->moves_available_top++].flip = 0;
+			ctx->moves_available[ctx->moves_available_top++].extra = SOSO_NOEXTRA;
 		}
 	}
 }
 
-static void update_tableau_moves(soso_ctx_t *ctx, const soso_game_t *game) {
+void soso_internal_update_tableau_moves(soso_ctx_t *ctx, const soso_game_t *game) {
 	soso_int_t card_from, card_to;
 	for (int i = 0; i < 7; ++i) {
 		card_from = game->tableau[i][game->tableau_top[i] - 1];
 		// Tableau->Foundation
-		if (game->tableau_top[i] > 0 && foundation_valid(card_from, game->foundation_top)) {
+		if (game->tableau_top[i] > 0 &&
+		    soso_internal_foundation_valid(card_from, game->foundation_top)) {
 			ctx->moves_available[ctx->moves_available_top].from = SOSO_TABLEAU1 + i;
-			ctx->moves_available[ctx->moves_available_top].to = SOSO_FOUNDATIONC + csuit(card_from);
+			ctx->moves_available[ctx->moves_available_top].to =
+			    SOSO_FOUNDATION1C + soso_internal_csuit(card_from);
 			ctx->moves_available[ctx->moves_available_top].count = 1;
-			ctx->moves_available[ctx->moves_available_top++].flip = 0;
+			ctx->moves_available[ctx->moves_available_top++].extra = SOSO_NOEXTRA;
 		}
 
 		// Tableau->Tableau top card
@@ -169,21 +148,22 @@ static void update_tableau_moves(soso_ctx_t *ctx, const soso_game_t *game) {
 		bool king_placed = false;
 		for (int j = 0; j < 7; ++j) {
 			if (i == j) continue;
-			if (!king_placed && game->tableau_top[j] == 0 && cvalue(card_from) == SOSO_KING) {
+			if (!king_placed && game->tableau_top[j] == 0 &&
+			    soso_internal_cvalue(card_from) == SOSO_KING) {
 				king_placed = true;
 				ctx->moves_available[ctx->moves_available_top].from = SOSO_TABLEAU1 + i;
 				ctx->moves_available[ctx->moves_available_top].to = SOSO_TABLEAU1 + j;
 				ctx->moves_available[ctx->moves_available_top].count = 1;
-				ctx->moves_available[ctx->moves_available_top++].flip = 0;
+				ctx->moves_available[ctx->moves_available_top++].extra = SOSO_NOEXTRA;
 				continue;
 			}
 
 			card_to = game->tableau[j][game->tableau_top[j] - 1];
-			if (tableau_valid(card_from, card_to)) {
+			if (soso_internal_tableau_valid(card_from, card_to)) {
 				ctx->moves_available[ctx->moves_available_top].from = SOSO_TABLEAU1 + i;
 				ctx->moves_available[ctx->moves_available_top].to = SOSO_TABLEAU1 + j;
 				ctx->moves_available[ctx->moves_available_top].count = 1;
-				ctx->moves_available[ctx->moves_available_top++].flip = 0;
+				ctx->moves_available[ctx->moves_available_top++].extra = SOSO_NOEXTRA;
 			}
 		}
 	}
@@ -194,7 +174,7 @@ static void update_tableau_moves(soso_ctx_t *ctx, const soso_game_t *game) {
 		if (game->tableau_top[i] == 0 || talonsize == 1) continue;
 
 		bool cards_closed = game->tableau_up[i] > 0;
-		bool king_first = cvalue(game->tableau[i][game->tableau_up[i]]) == SOSO_KING;
+		bool king_first = soso_internal_cvalue(game->tableau[i][game->tableau_up[i]]) == SOSO_KING;
 		int start = (!cards_closed && king_first) ? 1 : 0;
 
 		bool king_placed = false;
@@ -207,7 +187,7 @@ static void update_tableau_moves(soso_ctx_t *ctx, const soso_game_t *game) {
 				ctx->moves_available[ctx->moves_available_top].from = SOSO_TABLEAU1 + i;
 				ctx->moves_available[ctx->moves_available_top].to = SOSO_TABLEAU1 + j;
 				ctx->moves_available[ctx->moves_available_top].count = talonsize;
-				ctx->moves_available[ctx->moves_available_top++].flip = 0;
+				ctx->moves_available[ctx->moves_available_top++].extra = SOSO_NOEXTRA;
 			}
 
 			if (game->tableau_top[j] == 0) continue;
@@ -215,18 +195,63 @@ static void update_tableau_moves(soso_ctx_t *ctx, const soso_game_t *game) {
 			for (int offset = start; offset < talonsize; ++offset) {
 				card_from = game->tableau[i][game->tableau_up[i] + offset];
 				card_to = game->tableau[j][game->tableau_top[j] - 1];
-				if (tableau_valid(card_from, card_to)) {
+				if (soso_internal_tableau_valid(card_from, card_to)) {
 					ctx->moves_available[ctx->moves_available_top].from = SOSO_TABLEAU1 + i;
 					ctx->moves_available[ctx->moves_available_top].to = SOSO_TABLEAU1 + j;
 					ctx->moves_available[ctx->moves_available_top].count = talonsize - offset;
-					ctx->moves_available[ctx->moves_available_top++].flip = 0;
+					ctx->moves_available[ctx->moves_available_top++].extra = SOSO_NOEXTRA;
 				}
 			}
 		}
 	}
 }
 
-static bool draw(soso_game_t *game, int draw_count) {
+void soso_internal_update_stock_moves(soso_ctx_t *ctx, const soso_game_t *game) {
+	if (game->stock_count == 0) return;
+
+	soso_int_t current_cursor = game->stock_cur;
+	soso_ctx_t pseudo_ctx = (soso_ctx_t){.moves_available_top = 0, .draw_count = ctx->draw_count};
+	soso_game_t game_copy;
+	memcpy(&game_copy, game, sizeof(soso_game_t));
+	int numdraw = 0;
+	int maxdraw = soso_internal_max_draws(ctx, game);
+	for (int i = 0; i < maxdraw; ++i) {
+		if (!soso_internal_draw(&game_copy, ctx->draw_count)) break;
+		++numdraw;
+		if (soso_internal_update_available_moves(&pseudo_ctx, &game_copy, true)) {
+			ctx->moves_available[ctx->moves_available_top].from = SOSO_STOCK_WASTE;
+			ctx->moves_available[ctx->moves_available_top].to = SOSO_STOCK_WASTE;
+			ctx->moves_available[ctx->moves_available_top].count = numdraw;
+			ctx->moves_available[ctx->moves_available_top++].extra = SOSO_NOEXTRA;
+			break;
+		}
+	}
+}
+
+void soso_internal_update_foundation_moves(soso_ctx_t *ctx, const soso_game_t *game) {
+	for (int i = 0; i < 4; ++i) {
+		if (game->foundation_top[i] > 0)
+			for (int j = 0; j < 7; ++j)
+				if (soso_internal_tableau_valid(i * 13 + (game->foundation_top[i] - 1),
+				                                game->tableau[j][game->tableau_top[j] - 1])) {
+					ctx->moves_available[ctx->moves_available_top].from = SOSO_FOUNDATION1C + i;
+					ctx->moves_available[ctx->moves_available_top].to = SOSO_TABLEAU1 + j;
+					ctx->moves_available[ctx->moves_available_top].count = 1;
+					ctx->moves_available[ctx->moves_available_top++].extra = SOSO_NOEXTRA;
+				}
+	}
+}
+
+bool soso_internal_update_available_moves(soso_ctx_t *ctx, const soso_game_t *game, bool no_stock) {
+	ctx->moves_available_top = 0;
+	soso_internal_update_waste_moves(ctx, game);
+	soso_internal_update_tableau_moves(ctx, game);
+	soso_internal_update_foundation_moves(ctx, game);
+	if (!no_stock) soso_internal_update_stock_moves(ctx, game);
+	return ctx->moves_available_top > 0;
+}
+
+bool soso_internal_draw(soso_game_t *game, int draw_count) {
 	if (game->stock_count == 0) return false;
 	if (game->stock_cur == 0) {
 		game->stock_cur = game->stock_count;
@@ -237,91 +262,35 @@ static bool draw(soso_game_t *game, int draw_count) {
 	return true;
 }
 
-static inline int max_draws(const soso_ctx_t *ctx, const soso_game_t *game) {
-	int maxdraw = game->stock_count + 1;
-	if (ctx->draw_count > 1) {
-		if ((game->stock_count - game->stock_cur) % ctx->draw_count == 0)
-			maxdraw = ((game->stock_count - game->stock_cur) / ctx->draw_count +
-			           game->stock_cur / ctx->draw_count) +
-			          1;
-		else
-			maxdraw = (game->stock_cur / ctx->draw_count + game->stock_count / ctx->draw_count) + 1;
-	}
-	return maxdraw;
-}
-
-static bool update_available_moves(soso_ctx_t *ctx, const soso_game_t *game, bool no_stock);
-
-static void update_stock_moves(soso_ctx_t *ctx, const soso_game_t *game) {
-	if (game->stock_count == 0) return;
-
-	soso_int_t current_cursor = game->stock_cur;
-	soso_ctx_t pseudo_ctx = (soso_ctx_t){.moves_available_top = 0, .draw_count = ctx->draw_count};
-	soso_game_t game_copy;
-	memcpy(&game_copy, game, sizeof(soso_game_t));
-	int numdraw = 0;
-	int maxdraw = max_draws(ctx, game);
-	for (int i = 0; i < maxdraw; ++i) {
-		if (!draw(&game_copy, ctx->draw_count)) break;
-		++numdraw;
-		if (update_available_moves(&pseudo_ctx, &game_copy, true)) {
-			ctx->moves_available[ctx->moves_available_top].from = SOSO_STOCK_WASTE;
-			ctx->moves_available[ctx->moves_available_top].to = SOSO_STOCK_WASTE;
-			ctx->moves_available[ctx->moves_available_top].count = numdraw;
-			ctx->moves_available[ctx->moves_available_top++].flip = 0;
-			break;
-		}
-	}
-}
-
-static void update_foundation_moves(soso_ctx_t *ctx, const soso_game_t *game) {
-	for (int i = 0; i < 4; ++i) {
-		if (game->foundation_top[i] > 0)
-			for (int j = 0; j < 7; ++j)
-				if (tableau_valid(i * 13 + (game->foundation_top[i] - 1),
-				                  game->tableau[j][game->tableau_top[j] - 1])) {
-					ctx->moves_available[ctx->moves_available_top].from = SOSO_FOUNDATIONC + i;
-					ctx->moves_available[ctx->moves_available_top].to = SOSO_TABLEAU1 + j;
-					ctx->moves_available[ctx->moves_available_top].count = 1;
-					ctx->moves_available[ctx->moves_available_top++].flip = 0;
-				}
-	}
-}
-
-static bool update_available_moves(soso_ctx_t *ctx, const soso_game_t *game, bool no_stock) {
-	ctx->moves_available_top = 0;
-	update_waste_moves(ctx, game);
-	update_tableau_moves(ctx, game);
-	update_foundation_moves(ctx, game);
-	if (!no_stock) update_stock_moves(ctx, game);
-	return ctx->moves_available_top > 0;
-}
-
 static void make_auto_moves(soso_ctx_t *ctx, soso_game_t *game) {
 	// Turn flipable cards
 	for (int i = 0; i < 7; ++i) {
 		if (game->tableau_top > 0 && game->tableau_top[i] == game->tableau_up[i]) {
 			--game->tableau_up[i];
-			add_move(ctx,
-			         &(soso_move_t){
-			             .from = i + SOSO_TABLEAU1, .to = i + SOSO_TABLEAU1, .count = 1, .flip = 1},
-			         true);
+			soso_internal_add_move(ctx,
+			                       (soso_move_t){.from = i + SOSO_TABLEAU1,
+			                                     .to = i + SOSO_TABLEAU1,
+			                                     .count = 1,
+			                                     .extra = SOSO_FLIP | SOSO_AUTO_MOVE},
+			                       true);
 		}
 	}
 
 	// Optionally draw until a move becomes available
 	int numdraw = 0;
-	int maxdraw = max_draws(ctx, game);
+	int maxdraw = soso_internal_max_draws(ctx, game);
 	for (int i = 0; i < maxdraw; ++i) {
-		if (update_available_moves(ctx, game, true)) break;
-		if (!draw(game, ctx->draw_count)) break;
+		if (soso_internal_update_available_moves(ctx, game, true)) break;
+		if (!soso_internal_draw(game, ctx->draw_count)) break;
 		++numdraw;
 	}
 	if (numdraw > 0 && numdraw < maxdraw)
-		add_move(ctx,
-		         &(soso_move_t){
-		             .count = numdraw, .from = SOSO_STOCK_WASTE, .to = SOSO_STOCK_WASTE, .flip = 0},
-		         true);
+		soso_internal_add_move(ctx,
+		                       (soso_move_t){.count = numdraw,
+		                                     .from = SOSO_STOCK_WASTE,
+		                                     .to = SOSO_STOCK_WASTE,
+		                                     .extra = SOSO_AUTO_MOVE},
+		                       true);
 }
 
 static void clean_game(soso_game_t *game) {
@@ -336,16 +305,73 @@ static inline uint32_t state_hash(const soso_game_t *game, const soso_move_t *mo
 	return game_hash ^ *(const uint32_t *)move;
 }
 
-static void undo_move(soso_ctx_t *ctx, soso_game_t *game) {}
+static void undo_move(soso_ctx_t *ctx, soso_game_t *game) {
+	assert(ctx->moves_top > 0);
+	soso_move_t m = ctx->moves[ctx->moves_top - 1];
+	if ((m.extra & SOSO_AUTO_MOVE) > 0) --ctx->automoves_count;
+	if (m.from == SOSO_STOCK_WASTE) {
+		if (m.to == SOSO_STOCK_WASTE) {
+			// Undo Draw
+		}
+		else if (m.to >= SOSO_TABLEAU1 && m.to <= SOSO_TABLEAU7) {
+			// Undo Waste -> Tableau
+		}
+		else if (m.to >= SOSO_FOUNDATION1C && m.to <= SOSO_FOUNDATION4H) {
+			// Undo Waste -> Foundation
+		}
+	}
+	else if (m.from >= SOSO_TABLEAU1 && m.from <= SOSO_TABLEAU7) {
+		// Undo Tableau -> ?
+	}
+	else if (m.from >= SOSO_FOUNDATION1C && m.from <= SOSO_FOUNDATION4H) {
+		// Undo Foundation -> ?
+	}
+	else {
+		assert(0);
+	}
+}
+
+static void revert_to_last_move(soso_ctx_t *ctx, soso_game_t *game) {
+	for (;;) {
+		if (ctx->moves_top == 0) break;
+		undo_move(ctx, game);
+		if ((ctx->moves[ctx->moves_top].extra & SOSO_AUTO_MOVE) == 0) break;
+	}
+}
+
+static void make_move(soso_ctx_t *ctx, soso_game_t *game, soso_move_t m) {}
+
+static bool game_solved(const soso_game_t *game) {
+	soso_int_t total = 0;
+	for (int i = 0; i < 4; ++i) total += game->foundation_top[i];
+	return total == 52;
+}
 
 bool soso_solve(soso_ctx_t *ctx, soso_game_t *game) {
-	// init visited
-	ctx->visited = sht_init_alloc(sizeof(uint32_t), 100000, 42, ctx->alloc, ctx->free);
+	ctx->visited =
+	    sht_init_alloc(sizeof(uint32_t), ctx->max_visited, SOSO_HASH_SEED, ctx->alloc, ctx->free);
 	int states_visited = 0;
 	while (states_visited < ctx->max_visited) {
 		make_auto_moves(ctx, game);
-		update_available_moves(ctx, game, false);
+		soso_internal_update_available_moves(ctx, game, false);
 		if (ctx->moves_available_top == 0 && ctx->moves_top - ctx->automoves_count == 0) break;
+		bool move_made = false;
+		clean_game(game);  // to get consistent state hash
+		for (int i = 0; i < ctx->moves_available_top; ++i) {
+			uint32_t h = state_hash(game, &ctx->moves_available[i]);
+			if (sht_get(ctx->visited, &h, sizeof(uint32_t)) != NULL) continue;
+			move_made = true;
+			soso_internal_add_move(ctx, ctx->moves_available[i], false);
+			make_move(ctx, game, ctx->moves_available[i]);
+			break;
+		}
+		if (!move_made) {
+			revert_to_last_move(ctx, game);
+			uint32_t h = state_hash(game, &ctx->moves[ctx->moves_top]);
+			sht_set(ctx->visited, &h, sizeof(uint32_t), &h);
+			continue;
+		}
+		if (game_solved(game)) return true;
 	}
 	return false;
 }
