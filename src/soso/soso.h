@@ -34,6 +34,11 @@ typedef enum soso_pile {
 	SOSO_FOUNDATION4H,
 } soso_pile_t;
 
+/**
+ * Card occupies 6 bits
+ * 0-3 --> Value 	[0..12]
+ * 4-5 --> Suit		[0..3]
+*/
 typedef struct soso_deck {
 	soso_int_t cards[52];
 } soso_deck_t;
@@ -90,15 +95,15 @@ static inline soso_int_t soso_internal_get_waste_card(const soso_game_t *game) {
 }
 
 static inline soso_int_t soso_internal_cvalue(soso_int_t card) {
-	return card % 13;
+	return card & 0x0f;
 }
 
 static inline soso_int_t soso_internal_csuit(soso_int_t card) {
-	return card / 13;
+	return card >> 5;
 }
 
 static inline soso_int_t soso_internal_ccolor(soso_int_t card) {
-	return soso_internal_csuit(card) % 2;
+	return soso_internal_csuit(card) & 1;
 }
 
 static inline bool soso_internal_foundation_valid(soso_int_t card,

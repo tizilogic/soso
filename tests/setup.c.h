@@ -12,8 +12,8 @@ static bool setup_verify_shuffle(void) {
 	bool illegal_card = false;
 	bool shuffled = false;
 	for (int i = 0; i < 52; ++i) {
-		if (deck.cards[i] > 51) illegal_card = true;
-		if (deck.cards[i] != i) shuffled = true;
+		if ((deck.cards[i] & 0x0f) > 12) illegal_card = true;
+		if (deck.cards[i] != ((i / 13) << 5) | (i % 13)) shuffled = true;
 	}
 	if (illegal_card == false && shuffled == true) return true;
 	check_eq(illegal_card, false);
@@ -23,7 +23,10 @@ static bool setup_verify_shuffle(void) {
 
 static bool setup_verify_deal(void) {
 	soso_deck_t deck;
-	for (uint8_t i = 0; i < 52; ++i) deck.cards[i] = i;
+	for (soso_int_t i = 0; i < 4; ++i)
+		for (soso_int_t j = 0; j < 13; ++j) {
+			deck.cards[i * j] = (i << 5) | j;
+		}
 	soso_game_t game;
 	soso_deal(&game, &deck);
 	uint8_t card = 51;
@@ -33,10 +36,10 @@ static bool setup_verify_deal(void) {
 		if (i < 4)
 			if (game.foundation_top[i] != 0) test_fail();
 		for (int j = i; j < 7; ++j)
-			if (game.tableau[j][i] != card--) test_fail();
+			if (game.tableau[j][i] != deck.cards[card--]) test_fail();
 	}
 	for (int i = 0; i < 24; ++i)
-		if (game.stock[23 - i] != card--) test_fail();
+		if (game.stock[23 - i] != deck.cards[card--]) test_fail();
 	if (game.stock_count != 24) test_fail();
 	if (game.stock_cur != 24) test_fail();
 	return true;

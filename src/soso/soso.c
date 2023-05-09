@@ -14,9 +14,10 @@ static uint64_t random_get_in(uint64_t min, uint64_t max) {
 
 void soso_shuffle(soso_deck_t *deck, uint64_t seed) {
 	soso_random_seed(seed);
-	for (soso_int_t i = 0; i < 52; ++i) {
-		deck->cards[i] = i;
-	}
+	for (soso_int_t i = 0; i < 4; ++i)
+		for (soso_int_t j = 0; j < 13; ++j) {
+			deck->cards[i * j] = (i << 5) | j;
+		}
 
 	for (int s = 0; s < SOSO_NUM_SHUFFLES; ++s)
 		for (int i = 0; i < 51; ++i) {
@@ -356,7 +357,7 @@ bool soso_solve(soso_ctx_t *ctx, soso_game_t *game) {
 		soso_internal_update_available_moves(ctx, game, false);
 		if (ctx->moves_available_top == 0 && ctx->moves_top - ctx->automoves_count == 0) break;
 		bool move_made = false;
-		clean_game(game);  // to get consistent state hash
+		clean_game(game); // to get consistent state hash
 		for (int i = 0; i < ctx->moves_available_top; ++i) {
 			uint32_t h = state_hash(game, &ctx->moves_available[i]);
 			if (sht_get(ctx->visited, &h, sizeof(uint32_t)) != NULL) continue;
