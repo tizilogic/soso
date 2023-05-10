@@ -88,46 +88,45 @@ uint64_t soso_random_get(void);
 
 //--- Inline ---//
 
-static inline soso_int_t soso_internal_make_card(soso_int_t suit, soso_int_t value) {
+static soso_int_t soso_internal_make_card(soso_int_t suit, soso_int_t value) {
 	return (suit << 5) | value;
 }
 
-static inline soso_int_t soso_internal_get_waste_card(const soso_game_t *game) {
+static soso_int_t soso_internal_get_waste_card(const soso_game_t *game) {
 	if (game->stock_count > 0 && game->stock_count > game->stock_cur)
 		return game->stock[game->stock_cur];
 	return -1;
 }
 
-static inline soso_int_t soso_internal_cvalue(soso_int_t card) {
+static soso_int_t soso_internal_cvalue(soso_int_t card) {
 	return card & 0x0f;
 }
 
-static inline soso_int_t soso_internal_csuit(soso_int_t card) {
+static soso_int_t soso_internal_csuit(soso_int_t card) {
 	return card >> 5;
 }
 
-static inline soso_int_t soso_internal_ccolor(soso_int_t card) {
+static soso_int_t soso_internal_ccolor(soso_int_t card) {
 	return soso_internal_csuit(card) & 1;
 }
 
-static inline bool soso_internal_valid_card(soso_int_t card) {
+static bool soso_internal_valid_card(soso_int_t card) {
 	soso_uint_t value = card & 0x0f;
 	return value < 13;
 }
 
-static inline bool soso_internal_foundation_valid(soso_int_t card,
-                                                  const soso_int_t *foundation_top) {
+static bool soso_internal_foundation_valid(soso_int_t card, const soso_int_t *foundation_top) {
 	return soso_internal_valid_card(card) &&
 	       foundation_top[soso_internal_csuit(card)] == soso_internal_cvalue(card);
 }
 
-static inline bool soso_internal_tableau_valid(soso_int_t from, soso_int_t to) {
+static bool soso_internal_tableau_valid(soso_int_t from, soso_int_t to) {
 	return soso_internal_valid_card(from) && soso_internal_valid_card(to) &&
 	       (soso_internal_cvalue(to) - soso_internal_cvalue(from) == 1) &&
 	       soso_internal_ccolor(from) != soso_internal_ccolor(to);
 }
 
-static inline int soso_internal_max_draws(const soso_ctx_t *ctx, const soso_game_t *game) {
+static int soso_internal_max_draws(const soso_ctx_t *ctx, const soso_game_t *game) {
 	int maxdraw = game->stock_count + 1;
 	if (ctx->draw_count > 1) {
 		if ((game->stock_count - game->stock_cur) % ctx->draw_count == 0)

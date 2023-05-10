@@ -313,7 +313,7 @@ static void clean_game(soso_game_t *game) {
 		for (int j = game->tableau_top[i]; j < 13; ++j) game->tableau[i][j] = SOSO_EMPTY_CARD;
 }
 
-static inline uint32_t state_hash(const soso_game_t *game, const soso_move_t *move) {
+static uint32_t state_hash(const soso_game_t *game, const soso_move_t *move) {
 	uint32_t game_hash;
 	MurmurHash3_x86_32(game, sizeof(soso_game_t), 42, &game_hash);
 	return game_hash ^ *(const uint32_t *)move;
