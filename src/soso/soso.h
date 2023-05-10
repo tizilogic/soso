@@ -86,7 +86,7 @@ bool soso_solve(soso_ctx_t *ctx, soso_game_t *game);
 void soso_random_seed(uint64_t seed);
 uint64_t soso_random_get(void);
 
-//--- Inline ---//
+//--- Internals ---//
 
 static soso_int_t soso_internal_make_card(soso_int_t suit, soso_int_t value) {
 	return (suit << 5) | value;
@@ -138,8 +138,6 @@ static int soso_internal_max_draws(const soso_ctx_t *ctx, const soso_game_t *gam
 	}
 	return maxdraw;
 }
-
-//--- Internals ---//
 
 void soso_internal_add_move(soso_ctx_t *ctx, const soso_move_t m, bool is_auto);
 void soso_internal_update_waste_moves(soso_ctx_t *ctx, const soso_game_t *game);
