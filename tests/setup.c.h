@@ -46,7 +46,7 @@ static bool setup_verify_deal(void) {
 }
 
 static bool setup_run_tests(void) {
-	printf("Running Setup tests:\n");
+	printf("\nRunning Setup tests:\n");
 	int count = 0;
 	int fail = 0;
 	run_test(setup_verify_shuffle, &count, &fail);
