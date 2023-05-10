@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sht/sht.h>
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -32,6 +33,7 @@ typedef enum soso_pile {
 	SOSO_FOUNDATION2D,
 	SOSO_FOUNDATION3S,
 	SOSO_FOUNDATION4H,
+	SOSO_TOTAL_PILES,
 } soso_pile_t;
 
 /**
@@ -52,9 +54,6 @@ typedef struct soso_game {
 	soso_int_t tableau_up[7];
 	soso_int_t foundation_top[4];
 } soso_game_t;
-
-void soso_shuffle(soso_deck_t *deck, uint64_t seed);
-void soso_deal(soso_game_t *game, soso_deck_t *deck);
 
 typedef struct soso_move {
 	soso_int_t from;
@@ -78,6 +77,13 @@ typedef struct soso_ctx {
 	void (*free)(void *);
 } soso_ctx_t;
 
+const char *soso_suits;
+const char *soso_values;
+
+void soso_shuffle(soso_deck_t *deck, uint64_t seed);
+void soso_deal(soso_game_t *game, soso_deck_t *deck);
+// buffer needs to be at least 262 bytes of space
+void soso_export(const soso_game_t *game, char *buffer);
 void soso_ctx_init(soso_ctx_t *ctx, int draw_count, int max_visited, void *(*custom_alloc)(size_t),
                    void *(*custom_realloc)(void *, size_t), void (*custom_free)(void *));
 void soso_ctx_destroy(soso_ctx_t *ctx);
@@ -103,7 +109,9 @@ static soso_int_t soso_internal_cvalue(soso_int_t card) {
 }
 
 static soso_int_t soso_internal_csuit(soso_int_t card) {
-	return card >> 5;
+	soso_int_t s = (card & 0x7f) >> 5;
+	assert(s < 4 && s >= 0);
+	return s;
 }
 
 static soso_int_t soso_internal_ccolor(soso_int_t card) {
@@ -148,3 +156,4 @@ bool soso_internal_update_available_moves(soso_ctx_t *ctx, const soso_game_t *ga
 bool soso_internal_draw(soso_game_t *game, int draw_count);
 bool soso_internal_undo_draw(soso_game_t *game, int draw_count);
 void make_move(soso_ctx_t *ctx, soso_game_t *game, soso_move_t m);
+void undo_move(soso_ctx_t *ctx, soso_game_t *game);

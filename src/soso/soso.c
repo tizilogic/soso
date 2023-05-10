@@ -2,11 +2,12 @@
 
 #include <sht/murmur3.h>
 
-#include <assert.h>
 #include <string.h>
 
 #define SOSO_NUM_SHUFFLES 12
 #define SOSO_HASH_SEED 0xdeadc0de
+const char *soso_suits = "CDSH";
+const char *soso_values = "A23456789TJQK";
 
 static uint64_t random_get_in(uint64_t min, uint64_t max) {
 	return soso_random_get() % (max + 1 - min) + min;
@@ -16,7 +17,7 @@ void soso_shuffle(soso_deck_t *deck, uint64_t seed) {
 	soso_random_seed(seed);
 	for (soso_int_t i = 0; i < 4; ++i)
 		for (soso_int_t j = 0; j < 13; ++j) {
-			deck->cards[i * j] = soso_internal_make_card(i, j);
+			deck->cards[i * 13 + j] = soso_internal_make_card(i, j);
 		}
 
 	for (int s = 0; s < SOSO_NUM_SHUFFLES; ++s)
@@ -44,6 +45,83 @@ void soso_deal(soso_game_t *game, soso_deck_t *deck) {
 		for (int j = i; j < 7; ++j) game->tableau[j][i] = deck->cards[next--];
 	int stock_id = 23;
 	while (next > -1) game->stock[stock_id--] = deck->cards[next--];
+}
+
+void soso_export(const soso_game_t *game, char *buffer) {
+	int cur = 0;
+	for (int i = 0; i < SOSO_TOTAL_PILES; ++i) {
+		switch (i) {
+		// Treat the empty pile as waste
+		case SOSO_EMPTY_PILE: {
+			buffer[cur++] = ' ';
+			buffer[cur++] = 'W';
+			buffer[cur++] = ':';
+			buffer[cur++] = ' ';
+			if (game->stock_cur < game->stock_count)
+				for (int j = game->stock_cur; j < game->stock_count; ++j) {
+					buffer[cur++] = soso_values[soso_internal_cvalue(game->stock[j])];
+					buffer[cur++] = soso_suits[soso_internal_csuit(game->stock[j])];
+					buffer[cur++] = ' ';
+				}
+		} break;
+		case SOSO_STOCK_WASTE: {
+			buffer[cur++] = ' ';
+			buffer[cur++] = 'S';
+			buffer[cur++] = ':';
+			buffer[cur++] = ' ';
+			if (game->stock_cur > 0)
+				for (int j = game->stock_cur - 1; j >= 0; --j) {
+					buffer[cur++] = soso_values[soso_internal_cvalue(game->stock[j])];
+					buffer[cur++] = soso_suits[soso_internal_csuit(game->stock[j])];
+					buffer[cur++] = ' ';
+				}
+		} break;
+		case SOSO_TABLEAU1:
+		case SOSO_TABLEAU2:
+		case SOSO_TABLEAU3:
+		case SOSO_TABLEAU4:
+		case SOSO_TABLEAU5:
+		case SOSO_TABLEAU6:
+		case SOSO_TABLEAU7: {
+			int t = i - SOSO_TABLEAU1;
+			buffer[cur++] = 'T';
+			buffer[cur++] = 49 + t;
+			buffer[cur++] = ':';
+			buffer[cur++] = ' ';
+			if (game->tableau_top[t] > 0) {
+				for (int j = game->tableau_top[t] - 1; j >= game->tableau_up[t]; --j) {
+					buffer[cur++] = soso_values[soso_internal_cvalue(game->tableau[t][j])];
+					buffer[cur++] = soso_suits[soso_internal_csuit(game->tableau[t][j])];
+					buffer[cur++] = ' ';
+				}
+				buffer[cur++] = '|';
+				buffer[cur++] = ' ';
+				for (int j = game->tableau_up[t] - 1; j >= 0; --j) {
+					buffer[cur++] = soso_values[soso_internal_cvalue(game->tableau[t][j])];
+					buffer[cur++] = soso_suits[soso_internal_csuit(game->tableau[t][j])];
+					buffer[cur++] = ' ';
+				}
+			}
+		} break;
+		case SOSO_FOUNDATION1C:
+		case SOSO_FOUNDATION2D:
+		case SOSO_FOUNDATION3S:
+		case SOSO_FOUNDATION4H: {
+			int f = i - SOSO_FOUNDATION1C;
+			buffer[cur++] = 'F';
+			buffer[cur++] = soso_suits[f];
+			buffer[cur++] = ':';
+			buffer[cur++] = ' ';
+			for (int j = 0; j < game->foundation_top[f]; ++j) {
+				buffer[cur++] = soso_suits[soso_internal_csuit(f)];
+				buffer[cur++] = soso_values[soso_internal_cvalue(j)];
+				buffer[cur++] = ' ';
+			}
+		} break;
+		}
+		buffer[cur++] = '\n';
+	}
+	buffer[cur++] = '\0';
 }
 
 void soso_ctx_init(soso_ctx_t *ctx, int draw_count, int max_visited, void *(*custom_alloc)(size_t),
@@ -319,7 +397,7 @@ static uint32_t state_hash(const soso_game_t *game, const soso_move_t *move) {
 	return game_hash ^ *(const uint32_t *)move;
 }
 
-static void undo_move(soso_ctx_t *ctx, soso_game_t *game) {
+void undo_move(soso_ctx_t *ctx, soso_game_t *game) {
 	assert(ctx->moves_top > 0);
 	soso_move_t m = ctx->moves[ctx->moves_top - 1];
 	if ((m.extra & SOSO_AUTO_MOVE) > 0) --ctx->automoves_count;
