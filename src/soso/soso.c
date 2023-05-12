@@ -473,6 +473,7 @@ void soso_internal_undo_move(soso_ctx_t *ctx, soso_game_t *game) {
 		assert(0);
 	}
 	soso_clean_game(game);
+	--ctx->moves_top;
 }
 
 void soso_internal_make_move(soso_ctx_t *ctx, soso_game_t *game, soso_move_t m) {
