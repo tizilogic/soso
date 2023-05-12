@@ -175,14 +175,150 @@ static bool sohelper_verify_update_foundation_moves(void) {
 }
 
 static bool sohelper_verify_make_undo_move(void) {
-	// Need to test:
+	test_start();
+	soso_game_t game;
+	memset(&game, 0, sizeof(soso_game_t));
+	soso_ctx_t ctx;
+	soso_ctx_init(&ctx, 1, 100000, NULL, NULL, NULL);
+
 	// Draw
+	game.stock[0] = mc(0, 12);
+	game.stock[1] = mc(0, 11);
+	game.stock[2] = mc(0, 10);
+	game.stock[3] = mc(0, 9);
+	game.stock_count = 4;
+	game.stock_cur = 4;
+
+	check_eq(soso_internal_get_waste_card(&game), -1);
+	soso_move_t m;
+	m.from = SOSO_STOCK_WASTE;
+	m.to = SOSO_STOCK_WASTE;
+	m.count = 1;
+	m.extra = 0;
+	soso_internal_make_move(&ctx, &game, m);
+	check_eq(soso_internal_get_waste_card(&game), mc(0, 9));
+	soso_internal_add_move(&ctx, m, false);
+	soso_internal_undo_move(&ctx, &game);
+	check_eq(soso_internal_get_waste_card(&game), -1);
+
+	m.count = 5;
+	soso_internal_make_move(&ctx, &game, m);
+	check_eq(soso_internal_get_waste_card(&game), -1);
+
+	soso_ctx_destroy(&ctx);
+	soso_ctx_init(&ctx, 3, 100000, NULL, NULL, NULL);
+
+	game.stock[0] = mc(0, 12);
+	game.stock[1] = mc(0, 11);
+	game.stock[2] = mc(0, 10);
+	game.stock[3] = mc(0, 9);
+	game.stock_count = 4;
+	game.stock_cur = 4;
+	m.count = 2;
+	soso_internal_make_move(&ctx, &game, m);
+	check_eq(soso_internal_get_waste_card(&game), mc(0, 12));
+
 	// Waste -> Foundation
+	game.foundation_top[0] = 12;
+	m.to = SOSO_FOUNDATION1C;
+	m.count = 1;
+	soso_internal_make_move(&ctx, &game, m);
+	check_eq(game.foundation_top[0], 13);
+
 	// Waste -> Tableau
+	soso_ctx_destroy(&ctx);
+	soso_ctx_init(&ctx, 1, 100000, NULL, NULL, NULL);
+	game.stock[0] = mc(0, 12);
+	game.stock[1] = mc(0, 11);
+	game.stock[2] = mc(0, 10);
+	game.stock[3] = mc(0, 9);
+	game.stock_count = 4;
+	game.stock_cur = 0;
+
+	m.to = SOSO_TABLEAU1;
+	soso_internal_make_move(&ctx, &game, m);
+	soso_internal_add_move(&ctx, m, false);
+	check_eq(game.tableau[0][0], mc(0, 12));
+	check_eq(game.tableau_top[0], 1);
+	check_eq(game.tableau_up[0], 0);
+	check_eq(game.stock_count, 3);
+	check_eq(game.stock[0], mc(0, 11));
+	soso_internal_undo_move(&ctx, &game);
+	check_eq(game.stock_count, 4);
+	check_eq(game.stock[0], mc(0, 12));
+
 	// Tableau -> Tableau
+	soso_ctx_destroy(&ctx);
+	soso_ctx_init(&ctx, 1, 100000, NULL, NULL, NULL);
+	game.tableau[0][0] = mc(1, 1);
+	game.tableau[0][1] = mc(1, 12);
+	game.tableau[0][2] = mc(2, 11);
+	game.tableau[0][3] = mc(3, 10);
+	game.tableau_top[0] = 4;
+	game.tableau_up[0] = 1;
+	m.from = SOSO_TABLEAU1;
+	m.to = SOSO_TABLEAU2;
+	m.count = 3;
+	soso_internal_make_move(&ctx, &game, m);
+	soso_internal_add_move(&ctx, m, false);
+	check_eq(ctx.moves_top, 1);
+	check_eq(game.tableau_top[0], 1);
+	check_eq(game.tableau_up[0], 1);
+	check_eq(game.tableau[0][0], mc(1, 1));
+	check_eq(game.tableau[1][0], mc(1, 12));
+	check_eq(game.tableau_top[1], 3);
+	check_eq(game.tableau_up[1], 0);
+	soso_internal_undo_move(&ctx, &game);
+	check_eq(ctx.moves_top, 0);
+	check_eq(game.tableau_top[0], 4);
+	check_eq(game.tableau_up[0], 1);
+	check_eq(game.tableau[0][1], mc(1, 12));
+
 	// Tableau -> Foundation
+	soso_ctx_destroy(&ctx);
+	soso_ctx_init(&ctx, 1, 100000, NULL, NULL, NULL);
+	game.tableau[0][0] = mc(1, 1);
+	game.tableau[0][1] = mc(1, 12);
+	game.tableau[0][2] = mc(2, 11);
+	game.tableau[0][3] = mc(3, 10);
+	game.tableau_top[0] = 4;
+	game.tableau_up[0] = 1;
+	game.foundation_top[3] = 10;
+	m.from = SOSO_TABLEAU1;
+	m.to = SOSO_FOUNDATION4H;
+	m.count = 1;
+	soso_internal_make_move(&ctx, &game, m);
+	soso_internal_add_move(&ctx, m, false);
+	check_eq(game.foundation_top[3], 11);
+	check_eq(game.tableau_top[0], 3);
+	soso_internal_undo_move(&ctx, &game);
+	check_eq(game.foundation_top[3], 10);
+	check_eq(game.tableau_top[0], 4);
+	check_eq(game.tableau[0][3], mc(3, 10));
+
 	// Foundation -> Tableau
-	return true;
+	soso_ctx_destroy(&ctx);
+	soso_ctx_init(&ctx, 1, 100000, NULL, NULL, NULL);
+	game.tableau[0][0] = mc(1, 1);
+	game.tableau[0][1] = mc(1, 12);
+	game.tableau[0][2] = mc(2, 11);
+	game.tableau_top[0] = 3;
+	game.tableau_up[0] = 1;
+	game.foundation_top[3] = 11;
+	m.from = SOSO_FOUNDATION4H;
+	m.to = SOSO_TABLEAU1;
+	m.count = 1;
+	soso_internal_make_move(&ctx, &game, m);
+	soso_internal_add_move(&ctx, m, false);
+	check_eq(game.foundation_top[3], 10);
+	check_eq(game.tableau_top[0], 4);
+	check_eq(game.tableau[0][3], mc(3, 10));
+	soso_internal_undo_move(&ctx, &game);
+	check_eq(game.foundation_top[3], 11);
+	check_eq(game.tableau_top[0], 3);
+
+	soso_ctx_destroy(&ctx);
+	test_end();
 }
 
 static bool sohelper_verify_make_automoves(void) {}
@@ -199,6 +335,7 @@ static bool sohelper_run_tests(void) {
 	run_test(sohelper_verify_update_tableau_moves, &count, &fail);
 	run_test(sohelper_verify_update_stock_moves, &count, &fail);
 	run_test(sohelper_verify_update_foundation_moves, &count, &fail);
+	run_test(sohelper_verify_make_undo_move, &count, &fail);
 	printf("Finished %d tests, %d failures\n", count, fail);
 	return fail == 0;
 }
