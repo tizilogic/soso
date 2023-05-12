@@ -1,12 +1,12 @@
 #pragma once
 
-#include <sht/sht.h>
 #include <assert.h>
+#include <sht/sht.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-#define SOSO_EMPTY_CARD 127
+#define SOSO_EMPTY_CARD -1
 // TODO: Find a way to determine the maximum possible number of moves per game state
 #define SOSO_MOVES_AVAILABLE_CAP 16
 #define SOSO_BLACK 0
@@ -77,76 +77,36 @@ typedef struct soso_ctx {
 	void (*free)(void *);
 } soso_ctx_t;
 
-const char *soso_suits;
-const char *soso_values;
-
 void soso_shuffle(soso_deck_t *deck, uint64_t seed);
 void soso_deal(soso_game_t *game, soso_deck_t *deck);
-// buffer needs to be at least 262 bytes of space
+// buffer needs to have at least 262 bytes
 void soso_export(const soso_game_t *game, char *buffer);
 void soso_ctx_init(soso_ctx_t *ctx, int draw_count, int max_visited, void *(*custom_alloc)(size_t),
                    void *(*custom_realloc)(void *, size_t), void (*custom_free)(void *));
 void soso_ctx_destroy(soso_ctx_t *ctx);
 bool soso_solve(soso_ctx_t *ctx, soso_game_t *game);
 
+void soso_clean_game(soso_game_t *game);
+void soso_make_auto_moves(soso_ctx_t *ctx, soso_game_t *game);
+
 void soso_random_seed(uint64_t seed);
 uint64_t soso_random_get(void);
 
 //--- Internals ---//
 
-static soso_int_t soso_internal_make_card(soso_int_t suit, soso_int_t value) {
-	return (suit << 5) | value;
-}
-
-static soso_int_t soso_internal_get_waste_card(const soso_game_t *game) {
-	if (game->stock_count > 0 && game->stock_count > game->stock_cur)
-		return game->stock[game->stock_cur];
-	return -1;
-}
-
-static soso_int_t soso_internal_cvalue(soso_int_t card) {
-	return card & 0x0f;
-}
-
-static soso_int_t soso_internal_csuit(soso_int_t card) {
-	soso_int_t s = (card & 0x7f) >> 5;
-	assert(s < 4 && s >= 0);
-	return s;
-}
-
-static soso_int_t soso_internal_ccolor(soso_int_t card) {
-	return soso_internal_csuit(card) & 1;
-}
-
-static bool soso_internal_valid_card(soso_int_t card) {
-	soso_uint_t value = card & 0x0f;
-	return value < 13;
-}
-
-static bool soso_internal_foundation_valid(soso_int_t card, const soso_int_t *foundation_top) {
-	return soso_internal_valid_card(card) &&
-	       foundation_top[soso_internal_csuit(card)] == soso_internal_cvalue(card);
-}
-
-static bool soso_internal_tableau_valid(soso_int_t from, soso_int_t to) {
-	return soso_internal_valid_card(from) && soso_internal_valid_card(to) &&
-	       (soso_internal_cvalue(to) - soso_internal_cvalue(from) == 1) &&
-	       soso_internal_ccolor(from) != soso_internal_ccolor(to);
-}
-
-static int soso_internal_max_draws(const soso_ctx_t *ctx, const soso_game_t *game) {
-	int maxdraw = game->stock_count + 1;
-	if (ctx->draw_count > 1) {
-		if ((game->stock_count - game->stock_cur) % ctx->draw_count == 0)
-			maxdraw = ((game->stock_count - game->stock_cur) / ctx->draw_count +
-			           game->stock_cur / ctx->draw_count) +
-			          1;
-		else
-			maxdraw = (game->stock_cur / ctx->draw_count + game->stock_count / ctx->draw_count) + 1;
-	}
-	return maxdraw;
-}
-
+uint64_t soso_internal_random_get_in(uint64_t min, uint64_t max);
+soso_int_t soso_internal_make_card(soso_int_t suit, soso_int_t value);
+soso_int_t soso_internal_get_waste_card(const soso_game_t *game);
+soso_int_t soso_internal_cvalue(soso_int_t card);
+soso_int_t soso_internal_csuit(soso_int_t card);
+soso_int_t soso_internal_ccolor(soso_int_t card);
+bool soso_internal_valid_card(soso_int_t card);
+bool soso_internal_foundation_valid(soso_int_t card, const soso_int_t *foundation_top);
+bool soso_internal_tableau_valid(soso_int_t from, soso_int_t to);
+int soso_internal_max_draws(const soso_ctx_t *ctx, const soso_game_t *game);
+bool soso_internal_game_solved(const soso_game_t *game);
+void soso_internal_revert_to_last_move(soso_ctx_t *ctx, soso_game_t *game);
+uint32_t soso_internal_state_hash(const soso_game_t *game, const soso_move_t *move);
 void soso_internal_add_move(soso_ctx_t *ctx, const soso_move_t m, bool is_auto);
 void soso_internal_update_waste_moves(soso_ctx_t *ctx, const soso_game_t *game);
 void soso_internal_update_tableau_moves(soso_ctx_t *ctx, const soso_game_t *game);
@@ -155,5 +115,5 @@ void soso_internal_update_foundation_moves(soso_ctx_t *ctx, const soso_game_t *g
 bool soso_internal_update_available_moves(soso_ctx_t *ctx, const soso_game_t *game, bool no_stock);
 bool soso_internal_draw(soso_game_t *game, int draw_count);
 bool soso_internal_undo_draw(soso_game_t *game, int draw_count);
-void make_move(soso_ctx_t *ctx, soso_game_t *game, soso_move_t m);
-void undo_move(soso_ctx_t *ctx, soso_game_t *game);
+void soso_internal_make_move(soso_ctx_t *ctx, soso_game_t *game, soso_move_t m);
+void soso_internal_undo_move(soso_ctx_t *ctx, soso_game_t *game);
