@@ -7,19 +7,15 @@
 #include <stdio.h>
 
 static bool sosolver_verify_solve(void) {
+	test_start();
 	soso_deck_t deck;
 	soso_game_t game;
 	soso_ctx_t ctx;
-	soso_shuffle(&deck, 42);
+	soso_shuffle(&deck, 43);
 	soso_deal(&game, &deck);
-	char buff[262];
-	soso_export(&game, buff);
-	printf("Game:\n%s\n", buff);
-	/*
 	soso_ctx_init(&ctx, 1, 100000, NULL, NULL, NULL);
-	return soso_solve(&ctx, &game);
-	*/
-	return true;
+	check_eq(soso_solve(&ctx, &game), true);
+	test_end();
 }
 
 static bool sosolver_run_tests(void) {
