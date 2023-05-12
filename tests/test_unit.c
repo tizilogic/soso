@@ -8,7 +8,10 @@ int main(void) {
 	if (!sohelper_run_tests()) failed = true;
 	if (!sosolver_run_tests()) failed = true;
 
-	if (failed) return 1;
+	if (failed) {
+		printf("\nEncountered failed tests!\n");
+		return 1;
+	}
 	printf("\nAll tests completed successfully\n");
 	return 0;
 }
