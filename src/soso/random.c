@@ -27,6 +27,9 @@ uint64_t next(void) {
 }
 
 void soso_random_seed(uint64_t seed) {
+	s[1] = 1;
+	s[2] = 2;
+	s[3] = 3;
 	s[0] = seed;
 	s[1] = next();
 	s[2] = next();
