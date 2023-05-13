@@ -597,7 +597,6 @@ void soso_internal_revert_to_last_move(soso_ctx_t *ctx, soso_game_t *game) {
 	for (;;) {
 		if (ctx->moves_top == 0) break;
 		soso_internal_undo_move(ctx, game);
-		--ctx->moves_top;
 		if ((ctx->moves[ctx->moves_top].extra & SOSO_AUTO_MOVE) == 0) break;
 	}
 }
