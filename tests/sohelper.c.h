@@ -360,33 +360,35 @@ static bool sohelper_verify_make_automoves(void) {
 
 static bool sohelper_verify_revert_last_move(void) {
 	test_start();
-	soso_game_t game;
-	soso_ctx_t ctx;
-	soso_deck_t deck;
-	char buff[262];
-	soso_shuffle(&deck, 0xdeadb33fc0deface);
-	soso_deal(&game, &deck);
-	soso_make_auto_moves(&ctx, &game);
-	soso_clean_game(&game);
-	soso_internal_update_available_moves(&ctx, &game, false);
-	uint32_t h = soso_internal_state_hash(&game, &ctx.moves_available[0]);
-	uint32_t prev = h;
+	for (int i = 0; i < 70; i += 7) {
+		soso_game_t game;
+		soso_ctx_t ctx;
+		soso_deck_t deck;
+		soso_shuffle(&deck, 0xbadfaced ^ i);
+		soso_deal(&game, &deck);
+		soso_ctx_init(&ctx, 1, 100000, NULL, NULL, NULL);
+		soso_make_auto_moves(&ctx, &game);
+		soso_clean_game(&game);
+		soso_internal_update_available_moves(&ctx, &game, false);
+		uint32_t h = soso_internal_state_hash(&game, &ctx.moves_available[0]);
+		uint32_t prev = h;
 
-	soso_internal_make_move(&ctx, &game, ctx.moves_available[0]);
-	soso_internal_add_move(&ctx, ctx.moves_available[0], false);
-	soso_make_auto_moves(&ctx, &game);
-	soso_clean_game(&game);
-	soso_internal_update_available_moves(&ctx, &game, false);
-	h = soso_internal_state_hash(&game, &ctx.moves_available[0]);
-	check_neq(h, prev);
+		soso_internal_make_move(&ctx, &game, ctx.moves_available[0]);
+		soso_internal_add_move(&ctx, ctx.moves_available[0], false);
+		soso_make_auto_moves(&ctx, &game);
+		soso_clean_game(&game);
+		soso_internal_update_available_moves(&ctx, &game, false);
+		h = soso_internal_state_hash(&game, &ctx.moves_available[0]);
+		check_neq(h, prev);
 
-	soso_internal_revert_to_last_move(&ctx, &game);
-	soso_make_auto_moves(&ctx, &game);
-	soso_clean_game(&game);
-	soso_internal_update_available_moves(&ctx, &game, false);
-	h = soso_internal_state_hash(&game, &ctx.moves_available[0]);
-	check_eq(h, prev);
-
+		soso_internal_revert_to_last_move(&ctx, &game);
+		soso_make_auto_moves(&ctx, &game);
+		soso_clean_game(&game);
+		soso_internal_update_available_moves(&ctx, &game, false);
+		h = soso_internal_state_hash(&game, &ctx.moves_available[0]);
+		check_eq(h, prev);
+		soso_ctx_destroy(&ctx);
+	}
 	test_end();
 }
 
