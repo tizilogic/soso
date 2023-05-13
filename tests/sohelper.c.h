@@ -360,11 +360,11 @@ static bool sohelper_verify_make_automoves(void) {
 
 static bool sohelper_verify_revert_last_move(void) {
 	test_start();
-	for (int i = 0; i < 70; i += 7) {
+	for (int i = 1; i < 71; i += 7) {
 		soso_game_t game;
 		soso_ctx_t ctx;
 		soso_deck_t deck;
-		soso_shuffle(&deck, 0xbadfaced ^ i);
+		soso_shuffle(&deck, (0xbadfacedbeefc0de ^ (i * 1234567 + (i << 17))) >> (i % 32));
 		soso_deal(&game, &deck);
 		soso_ctx_init(&ctx, 1, 100000, NULL, NULL, NULL);
 		soso_make_auto_moves(&ctx, &game);
