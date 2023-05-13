@@ -333,12 +333,38 @@ void soso_internal_update_foundation_moves(soso_ctx_t *ctx, const soso_game_t *g
 	}
 }
 
+static int soso_internal_rate_move(soso_move_t a, const soso_game_t *game) {
+	if (a.from >= SOSO_TABLEAU1 && a.from <= SOSO_TABLEAU7) {
+		if (game->tableau_up[a.from] > 0 &&
+		    game->tableau_up[a.from] == game->tableau_top[a.from] - a.count)
+			return 2;
+		else if (a.to >= SOSO_FOUNDATION1C)
+			return 2;
+		return 0;
+	}
+	if (a.to >= SOSO_FOUNDATION1C && a.to <= SOSO_FOUNDATION4H) return 1;
+	if (a.from >= SOSO_FOUNDATION1C && a.from <= SOSO_FOUNDATION4H) return -2;
+	return 0;
+}
+
+static void soso_internal_sort_available(soso_ctx_t *ctx, const soso_game_t *game) {
+	for (int i = 0; i < ctx->moves_available_top - 1; ++i)
+		for (int j = i + 1; j < ctx->moves_available_top; ++j)
+			if (soso_internal_rate_move(ctx->moves_available[i], game) <
+			    soso_internal_rate_move(ctx->moves_available[j], game)) {
+				soso_move_t t = ctx->moves_available[i];
+				ctx->moves_available[i] = ctx->moves_available[j];
+				ctx->moves_available[j] = t;
+			}
+}
+
 bool soso_internal_update_available_moves(soso_ctx_t *ctx, const soso_game_t *game, bool no_stock) {
 	ctx->moves_available_top = 0;
-	soso_internal_update_waste_moves(ctx, game);
-	soso_internal_update_tableau_moves(ctx, game);
-	soso_internal_update_foundation_moves(ctx, game);
 	if (!no_stock) soso_internal_update_stock_moves(ctx, game);
+	soso_internal_update_tableau_moves(ctx, game);
+	soso_internal_update_waste_moves(ctx, game);
+	soso_internal_update_foundation_moves(ctx, game);
+	soso_internal_sort_available(ctx, game);
 	return ctx->moves_available_top > 0;
 }
 
@@ -563,6 +589,11 @@ bool soso_solve(soso_ctx_t *ctx, soso_game_t *game) {
 			uint32_t h = soso_internal_state_hash(game, &ctx->moves_available[i]);
 			if (sht_get(ctx->visited, &h, sizeof(uint32_t)) != NULL) continue;
 			move_made = true;
+			soso_move_t m = ctx->moves_available[i];
+			int from = m.from;
+			int to = m.to;
+			int count = m.count;
+			int extra = m.extra;
 			soso_internal_add_move(ctx, ctx->moves_available[i], false);
 			soso_internal_make_move(ctx, game, ctx->moves_available[i]);
 			sht_set(ctx->visited, &h, sizeof(uint32_t), &h);
@@ -584,7 +615,7 @@ bool soso_solve(soso_ctx_t *ctx, soso_game_t *game) {
 void soso_clean_game(soso_game_t *game) {
 	for (int i = game->stock_count; i < 24; ++i) game->stock[i] = SOSO_EMPTY_CARD;
 	for (int i = 0; i < 7; ++i)
-		for (int j = game->tableau_top[i]; j < 13; ++j) game->tableau[i][j] = SOSO_EMPTY_CARD;
+		for (int j = game->tableau_top[i]; j < 19; ++j) game->tableau[i][j] = SOSO_EMPTY_CARD;
 }
 
 uint32_t soso_internal_state_hash(const soso_game_t *game, const soso_move_t *move) {

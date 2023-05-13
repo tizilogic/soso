@@ -49,7 +49,7 @@ typedef struct soso_game {
 	soso_int_t stock[24];
 	soso_int_t stock_cur;
 	soso_int_t stock_count;
-	soso_int_t tableau[7][13];
+	soso_int_t tableau[7][19];
 	soso_int_t tableau_top[7];
 	soso_int_t tableau_up[7];
 	soso_int_t foundation_top[4];
