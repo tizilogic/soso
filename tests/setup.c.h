@@ -14,7 +14,7 @@ static bool setup_verify_shuffle(void) {
 	bool shuffled = false;
 	for (int i = 0; i < 52; ++i) {
 		if ((deck.cards[i] & 0x0f) > 12) illegal_card = true;
-		if (deck.cards[i] != ((i / 13) << 5) | (i % 13)) shuffled = true;
+		if (deck.cards[i] != (((i / 13) << 5) | (i % 13))) shuffled = true;
 	}
 	check_eq(illegal_card, false);
 	check_eq(shuffled, true);
