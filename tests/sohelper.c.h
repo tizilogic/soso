@@ -321,8 +321,74 @@ static bool sohelper_verify_make_undo_move(void) {
 	test_end();
 }
 
-static bool sohelper_verify_make_automoves(void) {}
-static bool sohelper_verify_revert_last_move(void) {}
+static bool sohelper_verify_make_automoves(void) {
+	test_start();
+	soso_game_t game;
+	memset(&game, 0, sizeof(soso_game_t));
+	soso_ctx_t ctx;
+	soso_ctx_init(&ctx, 1, 100000, NULL, NULL, NULL);
+
+	game.stock[0] = mc(0, 12);
+	game.stock[1] = mc(0, 11);
+	game.stock[2] = mc(0, 10);
+	game.stock[3] = mc(0, 9);
+	game.stock_count = 4;
+	game.stock_cur = 4;
+	game.foundation_top[0] = 10;
+	game.tableau[0][0] = mc(1, 1);
+	game.tableau_top[0] = 1;
+	game.tableau_up[0] = 1;
+
+	soso_make_auto_moves(&ctx, &game);
+	check_eq(soso_internal_get_waste_card(&game), mc(0, 10));
+	check_eq(game.stock_cur, 2);
+	check_eq(game.tableau_up[0], 0);
+	check_eq(ctx.moves_top, 2);
+	soso_move_t m;
+	m.from = SOSO_TABLEAU1;
+	m.to = SOSO_TABLEAU1;
+	m.count = 1;
+	m.extra = SOSO_FLIP | SOSO_AUTO_MOVE;
+	check_eq(*(int *)&ctx.moves[0], *(int *)&m);
+	m.from = SOSO_STOCK_WASTE;
+	m.to = SOSO_STOCK_WASTE;
+	m.count = 2;
+	m.extra = SOSO_AUTO_MOVE;
+	check_eq(*(int *)&ctx.moves[1], *(int *)&m);
+	test_end();
+}
+
+static bool sohelper_verify_revert_last_move(void) {
+	test_start();
+	soso_game_t game;
+	soso_ctx_t ctx;
+	soso_deck_t deck;
+	char buff[262];
+	soso_shuffle(&deck, 0xdeadb33fc0deface);
+	soso_deal(&game, &deck);
+	soso_make_auto_moves(&ctx, &game);
+	soso_clean_game(&game);
+	soso_internal_update_available_moves(&ctx, &game, false);
+	uint32_t h = soso_internal_state_hash(&game, &ctx.moves_available[0]);
+	uint32_t prev = h;
+
+	soso_internal_make_move(&ctx, &game, ctx.moves_available[0]);
+	soso_internal_add_move(&ctx, ctx.moves_available[0], false);
+	soso_make_auto_moves(&ctx, &game);
+	soso_clean_game(&game);
+	soso_internal_update_available_moves(&ctx, &game, false);
+	h = soso_internal_state_hash(&game, &ctx.moves_available[0]);
+	check_neq(h, prev);
+
+	soso_internal_revert_to_last_move(&ctx, &game);
+	soso_make_auto_moves(&ctx, &game);
+	soso_clean_game(&game);
+	soso_internal_update_available_moves(&ctx, &game, false);
+	h = soso_internal_state_hash(&game, &ctx.moves_available[0]);
+	check_eq(h, prev);
+
+	test_end();
+}
 
 static bool sohelper_run_tests(void) {
 	printf("\nRunning Solitaire Helper tests:\n");
@@ -336,6 +402,8 @@ static bool sohelper_run_tests(void) {
 	run_test(sohelper_verify_update_stock_moves, &count, &fail);
 	run_test(sohelper_verify_update_foundation_moves, &count, &fail);
 	run_test(sohelper_verify_make_undo_move, &count, &fail);
+	run_test(sohelper_verify_make_automoves, &count, &fail);
+	run_test(sohelper_verify_revert_last_move, &count, &fail);
 	printf("Finished %d tests, %d failures\n", count, fail);
 	return fail == 0;
 }
