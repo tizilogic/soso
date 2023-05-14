@@ -19,9 +19,9 @@ game, trying to find the **first** solution for a game.
 
 ## Use with other build systems
 
-- Add the following files to your build system:
+- Add/copy the following files to your build system:
     - `src/soso.c`
     - `src/random.c`
     - `ext/sht/sht.c`
     - `ext/sht/murmur3.c`
-- Add the `src` directory to your include directories
+- Add the `src` and `ext` directories to the include directories
