@@ -1,4 +1,5 @@
 # Solitaire Solver (soso)
+[![Linux x64](https://github.com/tizilogic/soso/actions/workflows/linux-x64.yml/badge.svg)](https://github.com/tizilogic/soso/actions/workflows/linux-x64.yml) [![Windows](https://github.com/tizilogic/soso/actions/workflows/windows.yml/badge.svg)](https://github.com/tizilogic/soso/actions/workflows/windows.yml)
 
 This library uses a mixed tree search approach to solve a Klondike Solitaire
 game, trying to find the **first** solution for a game.
