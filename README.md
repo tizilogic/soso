@@ -15,7 +15,11 @@ game, trying to find the **first** solution for a game.
 
 ## Use as library in a [kmake](https://github.com/Kode/kmake.git) compatible project
 
-- Add the lines `let soso = await project.addProject('path/to/soso'); soso.useAsLibrary();` to your `kfile.js`
+- Add the following lines to your `kfile.js`:
+    ```js
+    let soso = await project.addProject('path/to/soso');
+    soso.useAsLibrary();
+    ```
 
 ## Use with other build systems
 
