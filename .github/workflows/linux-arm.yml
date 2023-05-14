@@ -46,7 +46,7 @@ jobs:
           install: |
               apt-get update -y -q
               apt-get upgrade -y -q
-              apt-get install -y -q build-essential
+              apt-get install -y -q build-essential git
 
           # Produce a binary artifact and place it in the mounted volume
           run: |
