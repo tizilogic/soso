@@ -57,6 +57,19 @@ static bool sosolver_verify_solve(void) {
 		++moves;
 	}
 	printf("\nMoves: %d\n", moves);
+	soso_ctx_destroy(&ctx);
+	test_end();
+}
+
+static bool sosolver_verify_draw_three(void) {
+	test_start();
+	soso_deck_t deck;
+	soso_game_t game;
+	soso_ctx_t ctx;
+	soso_shuffle(&deck, 42);
+	soso_deal(&game, &deck);
+	soso_ctx_init(&ctx, 3, 100000, NULL, NULL, NULL);
+	check_true(soso_solve(&ctx, &game));
 	test_end();
 }
 
@@ -82,6 +95,7 @@ static bool sosolver_run_tests(void) {
 	int count = 0;
 	int fail = 0;
 	run_test(sosolver_verify_solve, &count, &fail);
+	run_test(sosolver_verify_draw_three, &count, &fail);
 	run_test(sosolver_verify_solvable_ratio, &count, &fail);
 	printf("Finished %d tests, %d failures\n", count, fail);
 	return fail == 0;
