@@ -297,7 +297,8 @@ void soso_internal_update_stock_moves(soso_ctx_t *ctx, const soso_game_t *game) 
 	for (int i = 0; i < maxdraw; ++i) {
 		if (!soso_internal_draw(&game_copy, ctx->draw_count)) break;
 		++numdraw;
-		if (soso_internal_update_available_moves(&pseudo_ctx, &game_copy, true)) {
+		soso_internal_update_waste_moves(&pseudo_ctx, &game_copy);
+		if (pseudo_ctx.moves_available_top > 0) {
 			ctx->moves_available[ctx->moves_available_top].from = SOSO_STOCK_WASTE;
 			ctx->moves_available[ctx->moves_available_top].to = SOSO_STOCK_WASTE;
 			ctx->moves_available[ctx->moves_available_top].count = numdraw;
