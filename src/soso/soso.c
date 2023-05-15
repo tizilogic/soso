@@ -272,6 +272,12 @@ void soso_internal_update_tableau_moves(soso_ctx_t *ctx, const soso_game_t *game
 			if (game->tableau_top[j] == 0) continue;
 
 			for (int offset = start; offset < talonsize; ++offset) {
+				if (offset > 0) {
+					card_from = game->tableau[i][game->tableau_up[i] + offset - 1];
+					if (game->foundation_top[soso_internal_csuit(card_from)] !=
+					    soso_internal_cvalue(card_from))
+						continue;
+				}
 				card_from = game->tableau[i][game->tableau_up[i] + offset];
 				card_to = game->tableau[j][game->tableau_top[j] - 1];
 				if (soso_internal_tableau_valid(card_from, card_to)) {
@@ -618,6 +624,24 @@ bool soso_solve(soso_ctx_t *ctx, soso_game_t *game) {
 		for (int i = 0; i < ctx->moves_available_top; ++i) {
 			uint32_t h = soso_internal_state_hash(game, &ctx->moves_available[i]);
 			if (sht_get(ctx->visited, &h, sizeof(uint32_t)) != NULL) continue;
+			int last = ctx->moves_top - 1;
+			int check = 3;
+			bool skip = false;
+			for (;;) {
+				if (last < 0 || check == 0) break;
+				if ((ctx->moves[last].extra & SOSO_AUTO_MOVE) > 0) {
+					--last;
+					continue;
+				}
+				soso_move_t lm = ctx->moves[last];
+				soso_move_t nm = ctx->moves_available[i];
+				if (lm.to == nm.from && lm.from == nm.to && lm.count == nm.count) {
+					skip = true;
+					break;
+				}
+				--check;
+			}
+			if (skip) continue;
 			move_made = true;
 			soso_move_t m = ctx->moves_available[i];
 			int from = m.from;
