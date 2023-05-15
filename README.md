@@ -6,7 +6,7 @@ game, trying to find the **first** solution for a game.
 
 ## Documentation
 
-...
+*TODO*
 
 ## Build
 
@@ -28,4 +28,4 @@ game, trying to find the **first** solution for a game.
     - `src/random.c`
     - `ext/sht/sht.c`
     - `ext/sht/murmur3.c`
-- Add the `src` and `ext` directories to the include directories
+- Configure the `src` and `ext` directories as include directories in your compiler directives
