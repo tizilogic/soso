@@ -69,3 +69,15 @@ static void internal_run_test(bool (*func)(void), const char *name, int *count, 
 		else                                                                                       \
 			printf(".");                                                                           \
 	}
+
+#define check_true(cond)                                                                            \
+	{                                                                                              \
+		++count;                                                                                   \
+		if (!(cond)) {                                                                          \
+			append_error("check true failed");                                                \
+			printf("X");                                                                           \
+			++failed;                                                                              \
+		}                                                                                          \
+		else                                                                                       \
+			printf(".");                                                                           \
+	}

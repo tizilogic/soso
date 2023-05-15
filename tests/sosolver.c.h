@@ -60,11 +60,29 @@ static bool sosolver_verify_solve(void) {
 	test_end();
 }
 
+static bool sosolver_verify_solvable_ratio(void) {
+	test_start();
+	int solved = 0;
+	for (int i = 0; i < 10; ++i) {
+		soso_deck_t deck;
+		soso_game_t game;
+		soso_ctx_t ctx;
+		soso_shuffle(&deck, 43 + i);
+		soso_deal(&game, &deck);
+		soso_ctx_init(&ctx, 1, 50000, NULL, NULL, NULL);
+		if (soso_solve(&ctx, &game)) ++solved;
+		soso_ctx_destroy(&ctx);
+	}
+	check_true(solved >= 5);
+	test_end();
+}
+
 static bool sosolver_run_tests(void) {
 	printf("\nRunning Solitaire Solver tests:\n");
 	int count = 0;
 	int fail = 0;
 	run_test(sosolver_verify_solve, &count, &fail);
+	run_test(sosolver_verify_solvable_ratio, &count, &fail);
 	printf("Finished %d tests, %d failures\n", count, fail);
 	return fail == 0;
 }

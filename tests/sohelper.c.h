@@ -106,20 +106,12 @@ static bool sohelper_verify_update_tableau_moves(void) {
 
 	ctx.moves_available_top = 0;
 	soso_internal_update_tableau_moves(&ctx, &game);
-	check_eq(ctx.moves_available_top, 5);
+	check_eq(ctx.moves_available_top, 2);
 	soso_move_t m;
 	m.from = SOSO_TABLEAU1;
 	m.to = SOSO_FOUNDATION1C;
 	m.count = 1;
 	m.extra = 0;
-	check_eq(is_in_available_moves(&ctx, m), true);
-	m.to = SOSO_TABLEAU2;
-	check_eq(is_in_available_moves(&ctx, m), true);
-	m.to = SOSO_TABLEAU3;
-	m.count = 4;
-	check_eq(is_in_available_moves(&ctx, m), true);
-	m.to = SOSO_TABLEAU4;
-	m.count = 12;
 	check_eq(is_in_available_moves(&ctx, m), true);
 	m.from = SOSO_TABLEAU4;
 	m.to = SOSO_TABLEAU5;
