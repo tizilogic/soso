@@ -354,7 +354,8 @@ static int soso_internal_rate_move(soso_move_t a, const soso_game_t *game, const
 		soso_internal_update_available_moves(&pseudo_ctx, &game_copy, true);
 		int best = -10;
 		for (int i = 0; i < pseudo_ctx.moves_available_top; ++i) {
-			int rating = soso_internal_rate_move(pseudo_ctx.moves_available[i], &game_copy, &pseudo_ctx);
+			int rating =
+			    soso_internal_rate_move(pseudo_ctx.moves_available[i], &game_copy, &pseudo_ctx);
 			best = (best < rating) ? rating : best;
 		}
 		return best;
