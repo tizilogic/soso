@@ -1,4 +1,4 @@
-name: Linux x64
+name: Check single header consistency
 
 on:
   push:
