@@ -336,26 +336,40 @@ void soso_internal_update_foundation_moves(soso_ctx_t *ctx, const soso_game_t *g
 
 static int soso_internal_rate_move(soso_move_t a, const soso_game_t *game, const soso_ctx_t *ctx) {
 	if (a.from >= SOSO_TABLEAU1 && a.from <= SOSO_TABLEAU7) {
-		if (game->tableau_up[a.from] > 0 &&
-		    game->tableau_up[a.from] == game->tableau_top[a.from] - a.count)
+		int from = a.from - SOSO_TABLEAU1;
+		if (game->tableau_up[from] > 0 &&
+		    game->tableau_up[from] == game->tableau_top[from] - a.count)
 			return 2;
-		else if (a.to >= SOSO_FOUNDATION1C)
-			return 2;
+		if (a.to >= SOSO_FOUNDATION1C) return 1;
 		return 0;
 	}
 	if (a.to >= SOSO_FOUNDATION1C) return 1;
-	if (a.from >= SOSO_FOUNDATION1C) return -2;
+	if (a.from >= SOSO_FOUNDATION1C) {
+		soso_game_t game_copy = *game;
+		soso_ctx_t pseudo_ctx = {.moves_available_top = 0, .draw_count = ctx->draw_count};
+		soso_internal_make_move(&pseudo_ctx, &game_copy, a);
+		soso_internal_update_tableau_moves(&pseudo_ctx, &game_copy);
+		soso_internal_update_waste_moves(&pseudo_ctx, &game_copy);
+		int best = -1;
+		for (int i = 0; i < pseudo_ctx.moves_available_top; ++i) {
+			soso_move_t m = pseudo_ctx.moves_available[i];
+			if (m.from == a.to && m.to == a.from) continue;
+			int rating = soso_internal_rate_move(m, &game_copy, &pseudo_ctx);
+			best = (best < rating) ? rating : best;
+		}
+		return best;
+	}
+	if (a.to >= SOSO_TABLEAU1 && a.to <= SOSO_TABLEAU7) return 1;
 	if (a.from == a.to && a.from == SOSO_STOCK_WASTE) {
 		soso_game_t game_copy = *game;
 		for (int i = 0; i < a.count; ++i) {
 			soso_internal_draw(&game_copy, ctx->draw_count);
 		}
 		soso_ctx_t pseudo_ctx = {.moves_available_top = 0};
-		soso_internal_update_available_moves(&pseudo_ctx, &game_copy, true);
+		soso_internal_update_waste_moves(&pseudo_ctx, &game_copy);
 		int best = -10;
 		for (int i = 0; i < pseudo_ctx.moves_available_top; ++i) {
-			int rating =
-			    soso_internal_rate_move(pseudo_ctx.moves_available[i], &game_copy, &pseudo_ctx);
+			int rating = (pseudo_ctx.moves_available[i].to >= SOSO_FOUNDATION1C) ? 1 : 0;
 			best = (best < rating) ? rating : best;
 		}
 		return best;
