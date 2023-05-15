@@ -23,5 +23,6 @@ jobs:
       run: ./get_dlc
     - name: Generate
       run: ./make --kfile single-header.js
-    - name: Check if consistent
-      run: [[ -z "$(git status --porcelain)" ]] && exit 0 || exit 1
+    - uses: CatChen/check-git-status-action@v1
+        with:
+          fail-if-not-clean: true # optional
