@@ -10,8 +10,9 @@ game, trying to find the **first** solution for a game.
 
 ## Build
 
-- Run: `./get_dlc[.bat]` to fetch the required submodules
-- Run: `./make[.bat] --compile --run` to build the tests *(to compile in debug mode add "`--debug`")*
+- Get Submodules: `./get_dlc[.bat]` to fetch the required submodules
+- Compile+Run Tests: `./make[.bat] --compile --run` to build the tests *(to compile in debug mode add "`--debug`")*
+- To update the single file/header library (after making changes in the `src` directory) run: `./make[.bat] --kfile single-header.js`
 
 ## Use as library in a [kmake](https://github.com/Kode/kmake.git) compatible project
 
@@ -23,9 +24,4 @@ game, trying to find the **first** solution for a game.
 
 ## Use with other build systems
 
-- Add/copy the following files to your build system:
-    - `src/soso.c`
-    - `src/random.c`
-    - `ext/sht/sht.c`
-    - `ext/sht/murmur3.c`
-- Configure the `src` and `ext` directories as include directories in your compiler directives
+- For convenience everything you need is packed into `soso.h` and `soso.c`. Just copy those into your project.

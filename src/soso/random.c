@@ -9,7 +9,7 @@ static inline uint64_t rotl(const uint64_t x, int k) {
 
 static uint64_t s[4] = {1, 2, 3, 4};
 
-uint64_t next(void) {
+static uint64_t next(void) {
 	const uint64_t result = rotl(s[1] * 5, 7) * 9;
 
 	const uint64_t t = s[1] << 17;

@@ -1,0 +1,27 @@
+name: Linux x64
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Apt Update
+      run: sudo apt update
+    - name: Apt Install
+      run: sudo apt-get install -y -q git
+    - name: Get Submodules
+      run: ./get_dlc
+    - name: Generate
+      run: ./make --kfile single-header.js
+    - name: Check if consistent
+      run: [[ -z "$(git status --porcelain)" ]] && exit 0 || exit 1

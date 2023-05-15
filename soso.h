@@ -1,7 +1,7 @@
 #pragma once
 
 #include <assert.h>
-#include <sht/sht.h>
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -100,28 +100,3 @@ uint64_t soso_random_get(void);
 #ifdef __cplusplus
 }
 #endif
-//--- Internals ---//
-
-uint64_t soso_internal_random_get_in(uint64_t min, uint64_t max);
-soso_int_t soso_internal_make_card(soso_int_t suit, soso_int_t value);
-soso_int_t soso_internal_get_waste_card(const soso_game_t *game);
-soso_int_t soso_internal_cvalue(soso_int_t card);
-soso_int_t soso_internal_csuit(soso_int_t card);
-soso_int_t soso_internal_ccolor(soso_int_t card);
-bool soso_internal_valid_card(soso_int_t card);
-bool soso_internal_foundation_valid(soso_int_t card, const soso_int_t *foundation_top);
-bool soso_internal_tableau_valid(soso_int_t from, soso_int_t to);
-int soso_internal_max_draws(const soso_ctx_t *ctx, const soso_game_t *game);
-bool soso_internal_game_solved(const soso_game_t *game);
-void soso_internal_revert_to_last_move(soso_ctx_t *ctx, soso_game_t *game);
-uint32_t soso_internal_state_hash(const soso_game_t *game, const soso_move_t *move);
-void soso_internal_add_move(soso_ctx_t *ctx, const soso_move_t m, bool is_auto);
-void soso_internal_update_waste_moves(soso_ctx_t *ctx, const soso_game_t *game);
-void soso_internal_update_tableau_moves(soso_ctx_t *ctx, const soso_game_t *game);
-void soso_internal_update_stock_moves(soso_ctx_t *ctx, const soso_game_t *game);
-void soso_internal_update_foundation_moves(soso_ctx_t *ctx, const soso_game_t *game);
-bool soso_internal_update_available_moves(soso_ctx_t *ctx, const soso_game_t *game, bool no_stock);
-bool soso_internal_draw(soso_game_t *game, int draw_count);
-bool soso_internal_undo_draw(soso_game_t *game, int draw_count);
-void soso_internal_make_move(soso_ctx_t *ctx, soso_game_t *game, soso_move_t m);
-void soso_internal_undo_move(soso_ctx_t *ctx, soso_game_t *game);
