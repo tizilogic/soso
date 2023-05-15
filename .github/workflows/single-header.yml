@@ -24,5 +24,5 @@ jobs:
     - name: Generate
       run: ./make --kfile single-header.js
     - uses: CatChen/check-git-status-action@v1
-        with:
-          fail-if-not-clean: true # optional
+      with: 
+        fail-if-not-clean: true # optional
