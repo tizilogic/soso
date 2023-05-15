@@ -334,7 +334,7 @@ void soso_internal_update_foundation_moves(soso_ctx_t *ctx, const soso_game_t *g
 	}
 }
 
-static int soso_internal_rate_move(soso_move_t a, const soso_game_t *game) {
+static int soso_internal_rate_move(soso_move_t a, const soso_game_t *game, const soso_ctx_t *ctx) {
 	if (a.from >= SOSO_TABLEAU1 && a.from <= SOSO_TABLEAU7) {
 		if (game->tableau_up[a.from] > 0 &&
 		    game->tableau_up[a.from] == game->tableau_top[a.from] - a.count)
@@ -343,16 +343,30 @@ static int soso_internal_rate_move(soso_move_t a, const soso_game_t *game) {
 			return 2;
 		return 0;
 	}
-	if (a.to >= SOSO_FOUNDATION1C && a.to <= SOSO_FOUNDATION4H) return 1;
-	if (a.from >= SOSO_FOUNDATION1C && a.from <= SOSO_FOUNDATION4H) return -2;
+	if (a.to >= SOSO_FOUNDATION1C) return 1;
+	if (a.from >= SOSO_FOUNDATION1C) return -2;
+	if (a.from == a.to && a.from == SOSO_STOCK_WASTE) {
+		soso_game_t game_copy = *game;
+		for (int i = 0; i < a.count; ++i) {
+			soso_internal_draw(&game_copy, ctx->draw_count);
+		}
+		soso_ctx_t pseudo_ctx = {.moves_available_top = 0};
+		soso_internal_update_available_moves(&pseudo_ctx, &game_copy, true);
+		int best = -10;
+		for (int i = 0; i < pseudo_ctx.moves_available_top; ++i) {
+			int rating = soso_internal_rate_move(pseudo_ctx.moves_available[i], &game_copy, &pseudo_ctx);
+			best = (best < rating) ? rating : best;
+		}
+		return best;
+	}
 	return 0;
 }
 
 static void soso_internal_sort_available(soso_ctx_t *ctx, const soso_game_t *game) {
 	for (int i = 0; i < ctx->moves_available_top - 1; ++i)
 		for (int j = i + 1; j < ctx->moves_available_top; ++j)
-			if (soso_internal_rate_move(ctx->moves_available[i], game) <
-			    soso_internal_rate_move(ctx->moves_available[j], game)) {
+			if (soso_internal_rate_move(ctx->moves_available[i], game, ctx) <
+			    soso_internal_rate_move(ctx->moves_available[j], game, ctx)) {
 				soso_move_t t = ctx->moves_available[i];
 				ctx->moves_available[i] = ctx->moves_available[j];
 				ctx->moves_available[j] = t;
