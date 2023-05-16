@@ -25,3 +25,12 @@ game, trying to find the **first** solution for a game.
 ## Use with other build systems
 
 - For convenience everything you need is packed into `soso.h` and `soso.c`. Just copy those into your project.
+
+## Contribute
+
+- Open an [Issue](https://github.com/tizilogic/soso/issues)
+- Open a [PR](https://github.com/tizilogic/soso/pulls)
+
+Code changes take place inside the `src/soso` folder. After making changes and before opening a PR, make sure
+to update the single file/header library files by running `./make[.bat] --kfile single-header.js` in the root
+directory of this repo.
