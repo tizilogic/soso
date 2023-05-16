@@ -82,20 +82,69 @@ typedef struct soso_ctx {
 	void (*free)(void *);
 } soso_ctx_t;
 
+/**
+ * @brief Initializes and shuffles a deck with a given seed
+ *
+ * @param deck
+ * @param seed
+ */
 void soso_shuffle(soso_deck_t *deck, uint64_t seed);
+
+/**
+ * @brief Setup a game using a provided deck
+ *
+ * @param game
+ * @param deck
+ */
 void soso_deal(soso_game_t *game, soso_deck_t *deck);
-// buffer needs to have at least 262 bytes
+
+/**
+ * @brief Converts the current state of a game into a string
+ *
+ * @param game
+ * @param buffer Needs to be at least 262 bytes of size
+ */
 void soso_export(const soso_game_t *game, char *buffer);
+
+/**
+ * @brief Initializes a context for solving a game
+ *
+ * @param ctx
+ * @param draw_count integer `>0`
+ * @param max_visited number of states to visit before giving up
+ * @param custom_alloc optional custom allocator function. `malloc/realloc/free` from the stdlib
+ * will be used if this is `NULL`
+ * @param custom_realloc if `custom_alloc != NULL` requires a `realloc` equivalent
+ * @param custom_free if `custom_alloc != NULL` requires a `free` equivalent
+ */
 void soso_ctx_init(soso_ctx_t *ctx, int draw_count, int max_visited, void *(*custom_alloc)(size_t),
                    void *(*custom_realloc)(void *, size_t), void (*custom_free)(void *));
 void soso_ctx_destroy(soso_ctx_t *ctx);
+
+/**
+ * @brief Attempts to solve a game
+ * 
+ * @param ctx 
+ * @param game 
+ * @return true found a solution
+ * @return false no solution found
+ */
 bool soso_solve(soso_ctx_t *ctx, soso_game_t *game);
 
+/**
+ * @brief Ensures a clean, hashable state
+ * 
+ * @param game 
+ */
 void soso_clean_game(soso_game_t *game);
-void soso_make_auto_moves(soso_ctx_t *ctx, soso_game_t *game);
 
-void soso_random_seed(uint64_t seed);
-uint64_t soso_random_get(void);
+/**
+ * @brief Perform card flipping and draw until a move is available
+ * 
+ * @param ctx 
+ * @param game 
+ */
+void soso_make_auto_moves(soso_ctx_t *ctx, soso_game_t *game);
 
 #ifdef __cplusplus
 }

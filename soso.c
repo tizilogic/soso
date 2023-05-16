@@ -2,6 +2,8 @@
 
 //--- Internals ---//
 
+void soso_random_seed(uint64_t seed);
+uint64_t soso_random_get(void);
 uint64_t soso_internal_random_get_in(uint64_t min, uint64_t max);
 soso_int_t soso_internal_make_card(soso_int_t suit, soso_int_t value);
 soso_int_t soso_internal_get_waste_card(const soso_game_t *game);
