@@ -72,6 +72,7 @@ typedef struct soso_ctx {
 	sht_t *visited;
 	soso_move_t *moves;
 	soso_move_t moves_available[SOSO_MOVES_AVAILABLE_CAP];
+	soso_int_t moves_available_rating[SOSO_MOVES_AVAILABLE_CAP];
 	int moves_cap, moves_top;
 	int moves_available_top;
 	int automoves_count;
@@ -123,9 +124,9 @@ void soso_ctx_destroy(soso_ctx_t *ctx);
 
 /**
  * @brief Attempts to solve a game
- * 
- * @param ctx 
- * @param game 
+ *
+ * @param ctx
+ * @param game
  * @return true found a solution
  * @return false no solution found
  */
@@ -133,16 +134,16 @@ bool soso_solve(soso_ctx_t *ctx, soso_game_t *game);
 
 /**
  * @brief Ensures a clean, hashable state
- * 
- * @param game 
+ *
+ * @param game
  */
 void soso_clean_game(soso_game_t *game);
 
 /**
  * @brief Perform card flipping and draw until a move is available
- * 
- * @param ctx 
- * @param game 
+ *
+ * @param ctx
+ * @param game
  */
 void soso_make_auto_moves(soso_ctx_t *ctx, soso_game_t *game);
 

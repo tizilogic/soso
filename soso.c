@@ -1085,7 +1085,8 @@ void soso_internal_update_foundation_moves(soso_ctx_t *ctx, const soso_game_t *g
 	}
 }
 
-static int soso_internal_rate_move(soso_move_t a, const soso_game_t *game, const soso_ctx_t *ctx) {
+static soso_int_t soso_internal_rate_move(soso_move_t a, const soso_game_t *game,
+                                          const soso_ctx_t *ctx) {
 	if (a.from >= SOSO_TABLEAU1 && a.from <= SOSO_TABLEAU7) {
 		int from = a.from - SOSO_TABLEAU1;
 		if (game->tableau_up[from] > 0 &&
@@ -1101,11 +1102,11 @@ static int soso_internal_rate_move(soso_move_t a, const soso_game_t *game, const
 		soso_internal_make_move(&pseudo_ctx, &game_copy, a);
 		soso_internal_update_tableau_moves(&pseudo_ctx, &game_copy);
 		soso_internal_update_waste_moves(&pseudo_ctx, &game_copy);
-		int best = -1;
+		soso_int_t best = -1;
 		for (int i = 0; i < pseudo_ctx.moves_available_top; ++i) {
 			soso_move_t m = pseudo_ctx.moves_available[i];
 			if (m.from == a.to && m.to == a.from) continue;
-			int rating = soso_internal_rate_move(m, &game_copy, &pseudo_ctx);
+			soso_int_t rating = soso_internal_rate_move(m, &game_copy, &pseudo_ctx);
 			best = (best < rating) ? rating : best;
 		}
 		return best;
@@ -1118,9 +1119,9 @@ static int soso_internal_rate_move(soso_move_t a, const soso_game_t *game, const
 		}
 		soso_ctx_t pseudo_ctx = {.moves_available_top = 0};
 		soso_internal_update_waste_moves(&pseudo_ctx, &game_copy);
-		int best = -10;
+		soso_int_t best = -10;
 		for (int i = 0; i < pseudo_ctx.moves_available_top; ++i) {
-			int rating = (pseudo_ctx.moves_available[i].to >= SOSO_FOUNDATION1C) ? 1 : 0;
+			soso_int_t rating = (pseudo_ctx.moves_available[i].to >= SOSO_FOUNDATION1C) ? 1 : 0;
 			best = (best < rating) ? rating : best;
 		}
 		return best;
@@ -1128,15 +1129,10 @@ static int soso_internal_rate_move(soso_move_t a, const soso_game_t *game, const
 	return 0;
 }
 
-static void soso_internal_sort_available(soso_ctx_t *ctx, const soso_game_t *game) {
-	for (int i = 0; i < ctx->moves_available_top - 1; ++i)
-		for (int j = i + 1; j < ctx->moves_available_top; ++j)
-			if (soso_internal_rate_move(ctx->moves_available[i], game, ctx) <
-			    soso_internal_rate_move(ctx->moves_available[j], game, ctx)) {
-				soso_move_t t = ctx->moves_available[i];
-				ctx->moves_available[i] = ctx->moves_available[j];
-				ctx->moves_available[j] = t;
-			}
+static void soso_internal_rate_available(soso_ctx_t *ctx, const soso_game_t *game) {
+	for (int i = 0; i < ctx->moves_available_top; ++i)
+		ctx->moves_available_rating[i] =
+		    soso_internal_rate_move(ctx->moves_available[i], game, ctx);
 }
 
 bool soso_internal_update_available_moves(soso_ctx_t *ctx, const soso_game_t *game, bool no_stock) {
@@ -1145,7 +1141,7 @@ bool soso_internal_update_available_moves(soso_ctx_t *ctx, const soso_game_t *ga
 	soso_internal_update_tableau_moves(ctx, game);
 	soso_internal_update_waste_moves(ctx, game);
 	soso_internal_update_foundation_moves(ctx, game);
-	soso_internal_sort_available(ctx, game);
+	soso_internal_rate_available(ctx, game);
 	return ctx->moves_available_top > 0;
 }
 
@@ -1364,7 +1360,9 @@ bool soso_solve(soso_ctx_t *ctx, soso_game_t *game) {
 	while (states_visited < ctx->max_visited) {
 		soso_make_auto_moves(ctx, game);
 		soso_internal_update_available_moves(ctx, game, false);
-		bool move_made = false;
+		soso_move_t *move = NULL;
+		soso_int_t best = -10;
+		uint32_t best_hash = 0;
 		soso_clean_game(game); // to get consistent state hash
 		for (int i = 0; i < ctx->moves_available_top; ++i) {
 			uint32_t h = soso_internal_state_hash(game, &ctx->moves_available[i]);
@@ -1387,19 +1385,18 @@ bool soso_solve(soso_ctx_t *ctx, soso_game_t *game) {
 				--check;
 			}
 			if (skip) continue;
-			move_made = true;
-			soso_move_t m = ctx->moves_available[i];
-			int from = m.from;
-			int to = m.to;
-			int count = m.count;
-			int extra = m.extra;
-			soso_internal_add_move(ctx, ctx->moves_available[i], false);
-			soso_internal_make_move(ctx, game, ctx->moves_available[i]);
-			sht_set(ctx->visited, &h, sizeof(uint32_t), &h);
-			++states_visited;
-			break;
+			if (ctx->moves_available_rating[i] <= best) continue;
+			move = &ctx->moves_available[i];
+			best = ctx->moves_available_rating[i];
+			best_hash = h;
 		}
-		if (!move_made) {
+		if (move != NULL) {
+			soso_internal_add_move(ctx, *move, false);
+			soso_internal_make_move(ctx, game, *move);
+			sht_set(ctx->visited, &best_hash, sizeof(uint32_t), &best_hash);
+			++states_visited;
+		}
+		else {
 			if (ctx->moves_top - ctx->automoves_count == 0) break;
 			soso_internal_revert_to_last_move(ctx, game);
 			continue;
